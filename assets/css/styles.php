@@ -1,5 +1,10 @@
 <style>  
     /* Estilos para el contenido principal */
+
+    /*==================================*/
+    /*==========DOBLE APARTADO==========*/
+    /*==================================*/
+
     .container_halfs{
         display: flex;
     }
@@ -73,6 +78,22 @@
         border: 1px solid  #000;
         color:#000;
     }
+
+    @media (max-width: 768px) {
+        .container_halfs{ 
+            display: flex;
+            flex-direction: column;
+        }
+
+        .left_half, .right_half {
+            width: 100%;
+            padding: 30px;
+        }
+    }
+
+    /*==================================*/
+    /*============CATEGORIAS============*/
+    /*==================================*/
 
     .categories{
         padding: 50px;
@@ -159,6 +180,10 @@
         right: -10px;
     }
 
+    /*==================================*/
+    /*===========WHY CHAMBA YA==========*/
+    /*==================================*/
+
     .why_chamba_ya{
         padding: 50px;
         background: #0088ff4f;
@@ -196,6 +221,22 @@
         font-size: 18px;
         margin-top: 10px;
     }
+
+    @media (max-width: 768px) {
+        .why_cards_container{
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+        }
+
+        .why_card {
+            width: 100%;
+        }
+    }
+
+    /*==================================*/
+    /*==============FOOTER==============*/
+    /*==================================*/
 
     .footer{
         background-color: #fff;
@@ -254,5 +295,29 @@
         border-radius: 50%;
         color: black;
         transition: all .5s ease;
+    }
+    @media (max-width: 768px) {
+        .footer_row{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .footer_links{
+            text-align: center;
+        }
+        
+        .footer_links h4{
+            font-size: 1.3em;
+        }
+
+        .footer_links ul li a{
+            font-size: 1.2em;
+        }
+
+        .social_links a{
+            font-size: 1.2em;
+        }
     }
 </style>
