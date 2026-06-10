@@ -27,7 +27,21 @@
             $_SESSION['registro_email'] = $email;
             $_SESSION['registro_password'] = password_hash($password, PASSWORD_DEFAULT); 
 
-            header('Location: form_datos_user.php');
+            header('Location: AuthController.php?action=showFormDatos');
+            exit();
+        }
+
+        public function showDatosForm(){
+            session_start();
+
+            if(!isset($_SESSION['registro_email']) || !isset($_SESSION['registro_password'])){
+                header('Location: login.php');
+                exit();
+            }
+
+            $departamentos = $this->userModel->getDepartamentos();
+
+            require_once __DIR__ . '/../views/auth/form_datos_user.php';
         }
 
         public function login(){
@@ -50,5 +64,23 @@
             }
         }
 
+    }
+
+    $controller = new UserController();
+
+    $action = $_GET['action'] ?? '';
+
+    switch($action){
+        case 'registerFirst':
+            $controller->registerFirst();
+            break;
+        case 'showFormDatos':
+            $controller->showDatosForm();
+            break;
+        case 'login':
+            $controller->login();
+            break;
+        default:
+            die('Acción no válida');
     }
 ?>

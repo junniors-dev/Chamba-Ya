@@ -24,7 +24,7 @@ fotoPerfil.addEventListener('change', (e) => {
 document.getElementById('departamento').addEventListener('change', function() {
     let idDepartamento = this.value;
 
-    fetch('../assets/db/getProvincias.php?id='+ idDepartamento)
+    fetch('../../core/db/getProvincias.php?id=' + idDepartamento)
         .then(res => res.json())
         .then(data => {
             let provincia = document.getElementById('provincia');
@@ -43,7 +43,7 @@ document.getElementById('departamento').addEventListener('change', function() {
 document.getElementById('provincia').addEventListener('change', function() {
     let idProvincia = this.value;
 
-    fetch('../assets/db/getDistritos.php?id='+ idProvincia)
+    fetch('../../core/db/getDistritos.php?id=' + idProvincia)
         .then(res => res.json())
         .then(data => {
             let distrito = document.getElementById('distrito');

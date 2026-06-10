@@ -5,7 +5,7 @@ body{
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-image: url(../assets/img/fondo_login2.png) !important;
+    background-image: url(../../assets/img/fondo_login2.png) !important;
     background-position: top left;
     background-attachment: fixed;
     background-repeat: no-repeat;

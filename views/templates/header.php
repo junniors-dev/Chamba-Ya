@@ -8,6 +8,12 @@
             class="logo_web" 
             width="200px">
 
+        <button class="menu-toggle" aria-label="Abrir menú">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </button>
+
         <nav class="main-nav">
             <ul class="nav-links">
                 <li><a href="../index.php">Inicio</a></li>
@@ -15,9 +21,8 @@
                 <li><a href="">Ofertas de Servicio</a></li>
                 <li><a href="">Ofertas cerca de ti</a></li>
             </ul>
-        </nav>
 
-        <div class="actions">
+            <div class="actions">
 
             <div class="search_box">
                 <input type="text" placeholder="Buscar...">
@@ -54,19 +59,22 @@
                     </button>
 
                     <div class="user_menu" id="userMenu">
-                        <a href="../pages/login.php">
+                        <a href="views/auth/login.php">
                             Iniciar Sesión
                         </a>
 
-                        <a href="../pages/register.php">
+                        <a href="views/auth/register.php">
                             Registrarse
                         </a>
                     </div>
 
                 <?php endif; ?>
 
+                </div>
             </div>
-        </div>
+        </nav>
+
+        
     </div>
 </header>
 

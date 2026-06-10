@@ -1,16 +1,27 @@
 <?php
-require_once  __DIR__ . '/conexion.php';
 
-$idDepartamento = $_GET['id'];
+    require_once __DIR__ . '/database.php';
 
-$sql = "SELECT idProvincia, nombre FROM provincia WHERE idDepartamento = '$idDepartamento'";
-$resultado = $enlace->query($sql);
+    if (!isset($_GET['id'])) {
+        echo json_encode([]);
+        exit();
+    }
 
-$datos = [];
+    $db = new Database();
+    $conn = $db->getConnection();
 
-while ($row = $resultado->fetch_assoc()) {
-    $datos[] = $row;
-}
+    $idDepartamento = (int) $_GET['id'];
 
-echo json_encode($datos);
+    $sql = "SELECT idProvincia, nombre
+            FROM provincia
+            WHERE idDepartamento = :idDepartamento";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(':idDepartamento', $idDepartamento, PDO::PARAM_INT);
+    $stmt->execute();
+
+    $datos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    header('Content-Type: application/json');
+    echo json_encode($datos);
 ?>

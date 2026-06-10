@@ -1,6 +1,6 @@
 <?php
 
-    require_once __DIR__ . '/config/database.php';
+    require_once __DIR__ . '/../core/db/database.php';
 
     class UserModel{
         private $conn;
@@ -11,7 +11,7 @@
         }
 
         public function createUser($fotoPerfil, $nombres, $apellidos, $descripcion, $correo, $password, $direccionDomicilio, $codigoPostal, $estado){
-            $sql = "INSERT INTO users (fotoPerfil, nombres, apellidos, descripcion, correo, password, direccionDomicilio, codigoPostal, fechaRegistro, estado) VALUES (:fotoPerfil, :nombres, :apellidos, :descripcion, :correo, :password, :direccionDomicilio, :codigoPostal, :fechaRegistro, :estado)";
+            $sql = "INSERT INTO usuario (fotoPerfil, nombres, apellidos, descripcion, correo, password, direccionDomicilio, codigoPostal, fechaRegistro, estado) VALUES (:fotoPerfil, :nombres, :apellidos, :descripcion, :correo, :password, :direccionDomicilio, :codigoPostal, :fechaRegistro, :estado)";
             $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $date = date('Y-m-d H:i:s');
 
@@ -31,7 +31,7 @@
         }
 
         public function getUserByEmail($correo){
-            $sql = "SELECT * FROM users WHERE correo = :correo";
+            $sql = "SELECT * FROM usuario WHERE correo = :correo";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':correo', $correo);
             $stmt->execute();
@@ -39,7 +39,7 @@
         }
 
         public function updateUser($id, $fotoPerfil, $nombres, $apellidos, $descripcion, $direccionDomicilio, $codigoPostal, $estado){
-            $sql = "UPDATE users SET fotoPerfil = :fotoPerfil, nombres = :nombres, apellidos = :apellidos, descripcion = :descripcion, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, estado = :estado WHERE id = :id";
+            $sql = "UPDATE usuario SET fotoPerfil = :fotoPerfil, nombres = :nombres, apellidos = :apellidos, descripcion = :descripcion, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, estado = :estado WHERE id = :id";
             $stmt = $this->conn->prepare($sql);
             
             $stmt->bindParam(':id', $id);
@@ -56,7 +56,7 @@
         }
 
         public function updatePassword($id, $newPassword){
-            $sql = "UPDATE users SET password = :password WHERE id = :id";
+            $sql = "UPDATE usuario SET password = :password WHERE id = :id";
             $password_hash = password_hash($newPassword, PASSWORD_DEFAULT);
             $stmt = $this->conn->prepare($sql);
 
@@ -67,7 +67,7 @@
         }
 
         public function deleteUser($id){
-            $sql = "DELETE FROM users WHERE id = :id";
+            $sql = "DELETE FROM usuario WHERE id = :id";
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id', $id);
             return $stmt->execute();
@@ -76,7 +76,7 @@
         //VALIDACIONES PARA REGISTRO
 
         public function emailExists($correo){
-            $sql = "SELECT COUNT(*) FROM users WHERE correo = :correo";
+            $sql = "SELECT COUNT(*) FROM usuario WHERE correo = :correo";
 
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':correo', $correo);
@@ -85,8 +85,12 @@
             return $stmt->fetchColumn() > 0;
         }
 
-        //LOGIN
-
-        
+        //VALIDACIONES PARA FORMULARIO DE DATOS DEL USUARIO
+        public function getDepartamentos(){
+            $sql = "SELECT idDepartamento, nombre FROM departamento";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
     }
 ?>

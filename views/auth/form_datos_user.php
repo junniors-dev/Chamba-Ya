@@ -1,10 +1,15 @@
+<?php
+
+    require_once __DIR__ . '/../../assets/css/style_datos.php';
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <body>
     <div class="form-container">
         <h1>Formulario de Datos del Usuario</h1>
         <h3>Completa la información para registrarte</h3>
-        <form action="" method="POST" enctype="multipart/form-data">
+        <form action="../../controllers/AuthController.php?action=completeRegister" method="POST" enctype="multipart/form-data">
             <div class="profile-picture">
                 <label for="fotoPerfil">Foto de Perfil:</label>
                 <input type="file" id="fotoPerfil" name="fotoPerfil" accept="image/*" required>
@@ -36,7 +41,9 @@
                     <label for="departamento">Departamento:</label>
                     <select  id="departamento" name="departamento" required>
                         <option value="">Selecciona un departamento</option>
-                        //Logica para cargar departamentos desde la base de datos
+                        <?php foreach($departamentos as $departamento):?>
+                            <option value="<?=$departamento['idDepartamento']?>"><?=$departamento['nombre']?></option>
+                        <?php endforeach;?>
                     </select>
                 </div>
                 <div class="form-group">
@@ -59,4 +66,4 @@
         </form>
     </div>
 </body>
-<script src="../assets/js/functions_form_datos.js"></script>
+<script src="../../assets/js/functions_form_datos.js"></script>

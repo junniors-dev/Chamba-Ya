@@ -3,8 +3,8 @@
 
     require_once 'assets/css/style.php';
     require_once 'assets/css/styles.php';
-    require_once 'templates/head.php';
-    require_once 'templates/header.php';
+    require_once 'views/templates/head.php';
+    require_once 'views/templates/header.php';
 ?>
 
     <body>

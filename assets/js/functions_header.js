@@ -15,3 +15,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
+
+document.addEventListener('DOMContentLoaded', (event) => {
+        const menuToogle = document.querySelector('.menu-toggle'); 
+        const nav = document.querySelector('.main-nav'); 
+        const navLinks = document.querySelector('.nav-links'); 
+
+        if (menuToogle && nav) {
+            menuToogle.addEventListener('click', () => {
+                nav.classList.toggle('open');
+            });
+        }
+    });
+
+
