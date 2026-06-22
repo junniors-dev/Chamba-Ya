@@ -1,10 +1,14 @@
 <?php
 // Autoloader manual: carga las clases automáticamente, sin la necesidad de usar require_once
-spl_autoload_register(function ($class) {
+
+// Calcula la raíz del proyecto (sube 2 niveles desde core/config/)
+$projectRootAutoload = dirname(dirname(__DIR__));
+
+spl_autoload_register(function ($class) use ($projectRootAutoload) {
     $directorios = [
-        __DIR__ . '/core/db/',
-        __DIR__ . '/models/',
-        __DIR__ . '/controllers/'
+        $projectRootAutoload . '/core/db/',
+        $projectRootAutoload . '/models/',
+        $projectRootAutoload . '/controllers/'
     ];
 
     foreach ($directorios as $directorio) {

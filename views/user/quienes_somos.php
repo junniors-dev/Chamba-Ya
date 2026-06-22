@@ -1,11 +1,11 @@
 <?php
     session_start();
-    require_once '../config.php';
-    require_once '../assets/css/style.php';
-    require_once '../assets/css/styles.php';
-    require_once '../assets/css/style_quienes_somos.php';
-    require_once 'templates/head.php';
-    require_once 'templates/header.php';
+    require_once __DIR__ . '/../../core/config/config.php';
+    require_once __DIR__ . '/../../assets/css/style.php';
+    require_once __DIR__ . '/../../assets/css/styles.php';
+    require_once __DIR__ . '/../../assets/css/style_quienes_somos.php';
+    require_once __DIR__ . '/../templates/head.php';
+    require_once __DIR__ . '/../templates/header.php';
 ?>
 
 <div class="about-page">
@@ -69,11 +69,11 @@
             <p>Únete a los miles de usuarios que ya están encontrando oportunidades y talento en Chamba Ya.</p>
             <div class="cta-buttons">
                 <?php if(isset($_SESSION['idUsuario'])): ?>
-                    <a href="<?= $base_path ?>index.php" class="cta-btn-primary">Explorar Ofertas</a>
-                    <a href="<?= $base_path ?>controllers/AuthController.php?action=showMisDatos" class="cta-btn-outline">Ir a mi Perfil</a>
+                    <a href="<?= BASE_URL ?>index.php" class="cta-btn-primary">Explorar Ofertas</a>
+                    <a href="<?= BASE_URL ?>controllers/AuthController.php?action=showMisDatos" class="cta-btn-outline">Ir a mi Perfil</a>
                 <?php else: ?>
-                    <a href="<?= $base_path ?>views/auth/register.php" class="cta-btn-primary">Crear Cuenta Gratis</a>
-                    <a href="<?= $base_path ?>views/auth/login.php" class="cta-btn-outline">Iniciar Sesión</a>
+                    <a href="<?= BASE_URL ?>views/auth/register.php" class="cta-btn-primary">Crear Cuenta Gratis</a>
+                    <a href="<?= BASE_URL ?>views/auth/login.php" class="cta-btn-outline">Iniciar Sesión</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -81,6 +81,6 @@
     </div>
 </div>
 
-<?php require_once __DIR__ . '/templates/footer.php'; ?>
+<?php require_once __DIR__ . '/../templates/footer.php'; ?>
 </body>
 </html>

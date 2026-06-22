@@ -1,5 +1,6 @@
 <?php
 
+    require_once __DIR__ . '/../../core/config/config.php';
     require_once __DIR__ . '/../../assets/css/style_datos.php';
 ?>
 
@@ -9,7 +10,7 @@
     <div class="form-container">
         <h1>Formulario de Datos del Usuario</h1>
         <h3>Completa la información para registrarte</h3>
-        <form action="<?= $base_path ?>controllers/AuthController.php?action=completeRegister" method="POST" enctype="multipart/form-data">
+        <form action="<?= BASE_URL ?>controllers/AuthController.php?action=completeRegister" method="POST" enctype="multipart/form-data">
             <div class="profile-picture">
                 <label for="fotoPerfil">Foto de Perfil:</label>
                 <input type="file" id="fotoPerfil" name="fotoPerfil" accept="image/*" required>
@@ -61,12 +62,12 @@
             </div>
             <div class="form_buttons">
                 <button type="submit" name="completarRegistro">Completar Registro</button>
-                <button type="button" onclick="window.location.href='../../index.php'">Cancelar</button>
+                <button type="button" onclick="window.location.href='<?= BASE_URL ?>index.php'">Cancelar</button>
             </div>
         </form>
     </div>
 </body>
 <script>
-    const basePath = "<?= $base_path ?>";
+    const basePath = "<?= BASE_URL ?>";
 </script>
-<script src="<?= $base_path ?>assets/js/functions_form_datos.js"></script>
+<script src="<?= BASE_URL ?>assets/js/functions_form_datos.js"></script>

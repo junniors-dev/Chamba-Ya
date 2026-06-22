@@ -37,7 +37,7 @@
             session_start();
 
             if(!isset($_SESSION['registro_email']) || !isset($_SESSION['registro_password'])){
-                header('Location: login.php');
+                header('Location: ' . BASE_URL . 'views/auth/login.php');
                 exit();
             }
 
@@ -62,7 +62,7 @@
                 $_SESSION['nombres'] = $usuario['nombres'];
                 $_SESSION['idUsuario'] = $usuario['idUsuario'];
                 $_SESSION['emailUsuario'] = $usuario['correo'];
-                header('Location: ../index.php');
+                header('Location: ' . BASE_URL . 'index.php');
             } else {
                 die('Contraseña incorrecta');
             }
@@ -72,7 +72,7 @@
             session_start();
 
             if(!isset($_SESSION['registro_email']) || !isset($_SESSION['registro_password'])){
-                header('Location: ../views/auth/login.php');
+                header('Location: ' . BASE_URL . 'views/auth/login.php');
                 exit();
             }
 
@@ -137,7 +137,7 @@
                     unset($_SESSION['registro_email']);
                     unset($_SESSION['registro_password']);
 
-                    header('Location: ../index.php');
+                    header('Location: ' . BASE_URL . 'index.php');
                     exit();
                 }else{
                     die('Error al registrarse el usuario');   

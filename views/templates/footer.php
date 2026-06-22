@@ -7,7 +7,7 @@
                 <h4>Nosotros</h4>
                 <div class="footer_content">
                     <ul>
-                        <li><a href="<?= $base_path ?>views/quienes_somos.php">Quienes Somos</a></li>
+                        <li><a href="<?= BASE_URL ?>views/user/quienes_somos.php">Quienes Somos</a></li>
                     </ul>
                 </div>
             </div>
@@ -15,9 +15,9 @@
                 <h4>Información Legal</h4>
                 <div class="footer_content">
                     <ul>
-                        <li><a href="<?= $base_path ?>views/politica_privacidad.php">Politicas de privacidad</a></li>
-                        <li><a href="<?= $base_path ?>views/terminos_y_condiciones.php">Terminos y Condiciones</a></li>
-                        <li><a href="<?= $base_path ?>views/user/preguntas_frecuentes.php">Preguntas frecuentes</a></li>
+                        <li><a href="<?= BASE_URL ?>views/politica_privacidad.php">Politicas de privacidad</a></li>
+                        <li><a href="<?= BASE_URL ?>views/user/terminos_y_condiciones.php">Terminos y Condiciones</a></li>
+                        <li><a href="<?= BASE_URL ?>views/user/preguntas_frecuentes.php">Preguntas frecuentes</a></li>
                     </ul>
                 </div>
             </div>

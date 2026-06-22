@@ -13,7 +13,7 @@
     <!-- Hero Section -->
     <section class="faq-hero">
         <div class="breadcrumb">
-            <a href="<?= $base_path ?>/index.php">Inicio</a> &nbsp;/&nbsp; Preguntas frecuentes
+            <a href="<?= BASE_URL ?>index.php">Inicio</a> &nbsp;/&nbsp; Preguntas frecuentes
         </div>
         <h1>¿En qué podemos ayudarte?</h1>
         <p>Encuentra respuestas rápidas a las preguntas más comunes sobre Chamba Ya.</p>
@@ -163,7 +163,7 @@
     </div>
 </div>
 
-<script src="<?= $base_path ?>/../../../assets/js/functions_faq.js"></script>
+<script src="<?= BASE_URL ?>assets/js/functions_faq.js"></script>
 <?php require_once __DIR__ . '/../templates/footer.php'; ?>
 </body>
 </html>
