@@ -1,6 +1,6 @@
 <?php
 
-    require_once __DIR__ . '/database.php';
+    require_once __DIR__ . '/../config/autoload.php';
 
     if (!isset($_GET['id'])) {
         echo json_encode([]);

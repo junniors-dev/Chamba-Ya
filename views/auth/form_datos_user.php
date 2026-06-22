@@ -9,7 +9,7 @@
     <div class="form-container">
         <h1>Formulario de Datos del Usuario</h1>
         <h3>Completa la información para registrarte</h3>
-        <form action="../../controllers/AuthController.php?action=completeRegister" method="POST" enctype="multipart/form-data">
+        <form action="<?= $base_path ?>controllers/AuthController.php?action=completeRegister" method="POST" enctype="multipart/form-data">
             <div class="profile-picture">
                 <label for="fotoPerfil">Foto de Perfil:</label>
                 <input type="file" id="fotoPerfil" name="fotoPerfil" accept="image/*" required>
@@ -66,4 +66,7 @@
         </form>
     </div>
 </body>
-<script src="../../assets/js/functions_form_datos.js"></script>
+<script>
+    const basePath = "<?= $base_path ?>";
+</script>
+<script src="<?= $base_path ?>assets/js/functions_form_datos.js"></script>

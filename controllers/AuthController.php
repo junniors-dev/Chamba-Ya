@@ -1,4 +1,6 @@
 <?php
+    require_once __DIR__ . '/../core/config/autoload.php';
+    require_once __DIR__ . '/../core/config/config.php';
     require_once __DIR__ . '/../models/userModel.php';
 
     class UserController{

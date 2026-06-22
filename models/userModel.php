@@ -94,5 +94,43 @@
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
+
+        //Función para tener la ubicación de una persona (Departamento, Provincia y Distrito) todo solo con el idDistrito
+        public function getFullLocationByIdDistrito($idDistrito){
+            $sql = "SELECT d.idDistrito, d.nombre as distrito,
+                        p.idProvincia, p.nombre as provincia,
+                        dep.idDepartamento, dep.nombre as departamento
+                    FROM distrito d 
+                    INNER JOIN provincia p ON d.idProvincia = p.idProvincia 
+                    INNER JOIN departamento dep ON p.idDepartamento = dep.idDepartamento 
+                    WHERE d.idDistrito = :idDistrito";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':idDistrito', $idDistrito);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        public function updateUserProfileData($id, $nombres, $apellidos, $correo, $telefono, $direccionDomicilio, $codigoPostal, $idDistrito = null, $fotoPerfil = null){
+            if($fotoPerfil){
+                $sql = "UPDATE usuario SET nombres = :nombres, apellidos = :apellidos, correo = :correo, telefono = :telefono, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, idDistrito = :idDistrito, fotoPerfil = :fotoPerfil WHERE idUsuario = :id";
+            } else {
+                $sql = "UPDATE usuario SET nombres = :nombres, apellidos = :apellidos, correo = :correo, telefono = :telefono, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, idDistrito = :idDistrito WHERE idUsuario = :id";
+            }
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':nombres', $nombres);
+            $stmt->bindParam(':apellidos', $apellidos);
+            $stmt->bindParam(':correo', $correo);
+            $stmt->bindParam(':telefono', $telefono);
+            $stmt->bindParam(':direccionDomicilio', $direccionDomicilio);
+            $stmt->bindParam(':codigoPostal', $codigoPostal);
+            $stmt->bindParam(':idDistrito', $idDistrito);
+            
+            if($fotoPerfil){
+                $stmt->bindParam(':fotoPerfil', $fotoPerfil);
+            }
+            
+            return $stmt->execute();
+        }
     }
 ?>

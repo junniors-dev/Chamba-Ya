@@ -1,11 +1,13 @@
-
+<?php 
+    require_once __DIR__ . '/../../core/config/config.php';
+    require_once '../../assets/css/style.php';
+    require_once '../../assets/css/styles.php';
+    require_once '../../assets/css/style_lr.php';
+?>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <?php require_once '../../assets/css/style.php';?>
-    <?php require_once '../../assets/css/styles.php';?>
-    <?php require_once '../../assets/css/style_lr.php';?>
     <script src="../../assets/js/function_lr.js"></script>
     <title>Clinica_Centenario</title>
 </head>

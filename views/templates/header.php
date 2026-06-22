@@ -1,5 +1,5 @@
-<?php require_once 'assets/css/style_header.php'; ?>
-<?php require_once 'core/config/config.php'; ?>
+<?php require_once __DIR__ . '/../../assets/css/style_header.php'; ?>
+<?php require_once __DIR__ . '/../../core/config/config.php'; ?>
 
 <header>
     <div class="main-header">
