@@ -24,7 +24,7 @@
 <div class="profile-page">
     <section class="profile-hero">
         <div class="breadcrumb">
-            <a href="<?= $base_path ?>index.php">Inicio</a> &nbsp;/&nbsp; <a href="<?= $base_path ?>controllers/AuthController.php?action=showMisDatos">Mi Perfil</a> &nbsp;/&nbsp; Seguridad
+            <a href="<?= BASE_URL?>index.php">Inicio</a> &nbsp;/&nbsp; <a href="<?= BASE_URL?>controllers/AuthController.php?action=showMisDatos">Mi Perfil</a> &nbsp;/&nbsp; Seguridad
         </div>
         <h1>Seguridad</h1>
         <p>Protege tu cuenta y gestiona tus credenciales de acceso.</p>
@@ -37,7 +37,7 @@
                 <div class="sidebar-section">
                     <h4>Ajustes</h4>
                     <ul class="sidebar-nav">
-                        <li><a href="<?= $base_path ?>controllers/AuthController.php?action=showMisDatos"><i class="fa-solid fa-user"></i> Mis Datos</a></li>
+                        <li><a href="<?= BASE_URL?>controllers/AuthController.php?action=showMisDatos"><i class="fa-solid fa-user"></i> Mis Datos</a></li>
                         <li><a href="#"><i class="fa-regular fa-bookmark"></i> Anuncios guardados</a></li>
                         <li><a href="#"><i class="fa-regular fa-square-plus"></i> Anuncios creados</a></li>
                     </ul>
@@ -45,8 +45,8 @@
                 <div class="sidebar-section">
                     <h4>Seguridad</h4>
                     <ul class="sidebar-nav">
-                        <li><a href="<?= $base_path ?>controllers/AuthController.php?action=showSeguridad" class="active"><i class="fa-solid fa-shield-halved"></i> Seguridad</a></li>
-                        <li><a href="<?= $base_path ?>controllers/AuthController.php?action=showPreferencias"><i class="fa-solid fa-sliders"></i> Preferencias</a></li>
+                        <li><a href="<?= BASE_URL?>controllers/AuthController.php?action=showSeguridad" class="active"><i class="fa-solid fa-shield-halved"></i> Seguridad</a></li>
+                        <li><a href="<?= BASE_URL?>controllers/AuthController.php?action=showPreferencias"><i class="fa-solid fa-sliders"></i> Preferencias</a></li>
                     </ul>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                     </div>
                 </div>
 
-                <form action="<?= $base_path ?>controllers/AuthController.php?action=changePassword" method="POST">
+                <form action="<?= BASE_URL?>controllers/AuthController.php?action=changePassword" method="POST">
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label for="currentPassword">Contraseña Actual</label>
