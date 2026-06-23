@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root bd_chamba_ya -e \"DESCRIBE calificacion;\" 2>$null)",
+      "PowerShell(if \\(-not $?\\) { \"mysql no disponible o BD inaccesible\" })"
+    ]
+  }
+}

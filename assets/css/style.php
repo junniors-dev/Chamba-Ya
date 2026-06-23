@@ -1,0 +1,9 @@
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        list-style: none;
+        font-family: Arial, Helvetica, sans-serif;
+    } 
+</style>
