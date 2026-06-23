@@ -1,7 +1,5 @@
 <?php
 
-    require_once __DIR__ . '/../core/db/database.php';
-
     class UserModel{
         private $conn;
 
@@ -58,14 +56,20 @@
         }
 
         public function updatePassword($id, $newPassword){
-            $sql = "UPDATE usuario SET password = :password WHERE id = :id";
+            $sql = "UPDATE usuario SET password = :password WHERE idUsuario = :id";
             $password_hash = password_hash($newPassword, PASSWORD_DEFAULT);
             $stmt = $this->conn->prepare($sql);
-
             $stmt->bindParam(':id', $id);
             $stmt->bindParam(':password', $password_hash);
-            
             return $stmt->execute();
+        }
+
+        public function getUserById($id){
+            $sql = "SELECT * FROM usuario WHERE idUsuario = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
         public function deleteUser($id){
@@ -75,19 +79,14 @@
             return $stmt->execute();
         }
 
-        //VALIDACIONES PARA REGISTRO
-
         public function emailExists($correo){
             $sql = "SELECT COUNT(*) FROM usuario WHERE correo = :correo";
-
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':correo', $correo);
             $stmt->execute();
-            
             return $stmt->fetchColumn() > 0;
         }
 
-        //VALIDACIONES PARA FORMULARIO DE DATOS DEL USUARIO
         public function getDepartamentos(){
             $sql = "SELECT idDepartamento, nombre FROM departamento";
             $stmt = $this->conn->prepare($sql);
@@ -95,7 +94,7 @@
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        //Función para tener la ubicación de una persona (Departamento, Provincia y Distrito) todo solo con el idDistrito
+        //IMPORTANTE: devuelve los IDs (idDistrito, idProvincia, idDepartamento) además de los nombres
         public function getFullLocationByIdDistrito($idDistrito){
             $sql = "SELECT d.idDistrito, d.nombre as distrito,
                         p.idProvincia, p.nombre as provincia,

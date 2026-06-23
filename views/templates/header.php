@@ -45,10 +45,10 @@
                             <?= $_SESSION['nombres']; ?>
                         </p>
 
-                        <a href="<?= BASE_URL; ?>views/user/profile.php">Mis datos</a>
-                        <a href="<?= BASE_URL; ?>views/user/applications.php">Mis postulaciones</a>
-                        <a href="<?= BASE_URL; ?>views/user/saved_ads.php">Anuncios guardados</a>
-                        <a href="<?= BASE_URL; ?>views/user/created_ads.php">Anuncios creados</a>
+                        <a href="<?= BASE_URL ?>controllers/AuthController.php?action=showMisDatos">Mis datos</a>
+                        <a href="">Mis postulaciones</a>
+                        <a href="">Anuncios guardados</a>
+                        <a href="">Anuncios creados</a>
                         <a href="<?= BASE_URL; ?>views/auth/logout.php">Cerrar sesión</a>
                     </div>
 

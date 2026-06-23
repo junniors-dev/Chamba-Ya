@@ -1,7 +1,6 @@
 <?php
     require_once __DIR__ . '/../core/config/autoload.php';
     require_once __DIR__ . '/../core/config/config.php';
-    require_once __DIR__ . '/../models/userModel.php';
 
     class UserController{
 
@@ -37,12 +36,13 @@
             session_start();
 
             if(!isset($_SESSION['registro_email']) || !isset($_SESSION['registro_password'])){
-                header('Location: ' . BASE_URL . 'views/auth/login.php');
+                header('Location: login.php');
                 exit();
             }
 
             $departamentos = $this->userModel->getDepartamentos();
 
+            global $base_path;
             require_once __DIR__ . '/../views/auth/form_datos_user.php';
         }
 
@@ -62,7 +62,7 @@
                 $_SESSION['nombres'] = $usuario['nombres'];
                 $_SESSION['idUsuario'] = $usuario['idUsuario'];
                 $_SESSION['emailUsuario'] = $usuario['correo'];
-                header('Location: ' . BASE_URL . 'index.php');
+                header('Location: ../index.php');
             } else {
                 die('Contraseña incorrecta');
             }
@@ -72,15 +72,13 @@
             session_start();
 
             if(!isset($_SESSION['registro_email']) || !isset($_SESSION['registro_password'])){
-                header('Location: ' . BASE_URL . 'views/auth/login.php');
+                header('Location: ../views/auth/login.php');
                 exit();
             }
 
-            //DATOS DEL PRIMER PASO DE REGISTRO (REGISTER INICIAL)
             $correo = $_SESSION['registro_email'];
             $password = $_SESSION['registro_password'];
 
-            //DATOS DEL FORMULARIO
             $fotoPerfil = $_FILES['fotoPerfil'] ?? null;
             $descripcionPerfil = $_POST['descripcionPerfil'] ?? '';
             $nombres = $_POST['nombres'] ?? '';
@@ -91,8 +89,6 @@
             $fechaRegistro = date('Y-m-d H:i:s');
             $estado = 'Activo';
             $idDistrito = $_POST['distrito'] ?? '';
-
-            //GUARDADO DE LA FOTO DE PERFIL
 
             $nombreFoto = 'default.png';
 
@@ -105,43 +101,155 @@
                 }
 
                 $nombreFoto = uniqid() . '.' . $extension;
-
                 $rutaDestino = __DIR__ . '/../assets/uploads/img_perfiles/' . $nombreFoto;
-
                 move_uploaded_file($_FILES['fotoPerfil']['tmp_name'], $rutaDestino);
 
-                //INSERCIÓN DEL USUARIO EN LA BASE DE DATOS
-
                 $resultado = $this->userModel->createUser(
-                    $nombreFoto,
-                    $nombres,
-                    $apellidos,
-                    $descripcionPerfil,
-                    $telefono,
-                    $correo,
-                    $password,
-                    $direccionDomicilio,
-                    $codigoPostal,
-                    $fechaRegistro,
-                    $estado,
-                    $idDistrito
+                    $nombreFoto, $nombres, $apellidos, $descripcionPerfil,
+                    $telefono, $correo, $password, $direccionDomicilio,
+                    $codigoPostal, $fechaRegistro, $estado, $idDistrito
                 );
 
                 if($resultado){
                     $usuario = $this->userModel->getUserByEmail($correo);
-                    
                     $_SESSION['idUsuario'] = $usuario['idUsuario'];
                     $_SESSION['nombres'] = $usuario['nombres'];
-                    $_SESSION['correo'] = $usuario['correo'];
-
+                    $_SESSION['emailUsuario'] = $usuario['correo'];
                     unset($_SESSION['registro_email']);
                     unset($_SESSION['registro_password']);
-
-                    header('Location: ' . BASE_URL . 'index.php');
+                    header('Location: ../index.php');
                     exit();
-                }else{
-                    die('Error al registrarse el usuario');   
+                } else {
+                    die('Error al registrarse el usuario');
                 }
+            }
+        }
+
+        public function showMisDatos(){
+            session_start();
+            if(!isset($_SESSION['idUsuario'])){
+                header('Location: login.php');
+                exit();
+            }
+
+            $usuario = $this->userModel->getUserById($_SESSION['idUsuario']);
+
+            $ubicacionText = 'No registrado';
+            $loc = null;
+            if(!empty($usuario['idDistrito'])){
+                $loc = $this->userModel->getFullLocationByIdDistrito($usuario['idDistrito']);
+                if($loc){
+                    $ubicacionText = $loc['departamento'] . ' / ' . $loc['provincia'] . ' / ' . $loc['distrito'];
+                }
+            }
+
+            $departamentos = $this->userModel->getDepartamentos();
+
+            global $base_path;
+            require_once __DIR__ . '/../views/user/mis_datos.php';
+        }
+
+        public function showSeguridad(){
+            session_start();
+            if(!isset($_SESSION['idUsuario'])){
+                header('Location: login.php');
+                exit();
+            }
+            global $base_path;
+            require_once __DIR__ . '/../views/user/seguridad.php';
+        }
+
+        public function showPreferencias(){
+            session_start();
+            if(!isset($_SESSION['idUsuario'])){
+                header('Location: login.php');
+                exit();
+            }
+            global $base_path;
+            require_once __DIR__ . '/../views/user/preferencias.php';
+        }
+
+        public function updateMisDatos(){
+            session_start();
+            if(!isset($_SESSION['idUsuario'])){
+                die('No autorizado');
+            }
+
+            $idUsuario = $_SESSION['idUsuario'];
+            $nombres = $_POST['nombres'] ?? '';
+            $apellidos = $_POST['apellidos'] ?? '';
+            $correo = $_POST['correo'] ?? '';
+            $telefono = $_POST['telefono'] ?? '';
+            $direccionDomicilio = $_POST['direccionDomicilio'] ?? '';
+            $codigoPostal = $_POST['codigoPostal'] ?? '';
+            $idDistrito = !empty($_POST['distrito']) ? $_POST['distrito'] : null;
+            
+            $fotoPerfilData = null;
+            if(isset($_FILES['fotoPerfil']) && $_FILES['fotoPerfil']['error'] == UPLOAD_ERR_OK){
+                $extension = strtolower(pathinfo($_FILES['fotoPerfil']['name'], PATHINFO_EXTENSION));
+                $permitidos = ['jpg', 'jpeg', 'png', 'webp'];
+                if(!in_array($extension, $permitidos)){
+                    header('Location: AuthController.php?action=showMisDatos&status=error'); exit();
+                }
+                $nombreFoto = uniqid('pfp_') . '.' . $extension;
+                $rutaDestino = __DIR__ . '/../assets/uploads/img_perfiles/' . $nombreFoto;
+                if(move_uploaded_file($_FILES['fotoPerfil']['tmp_name'], $rutaDestino)){
+                    $fotoPerfilData = $nombreFoto;
+                }
+            }
+
+            $success = $this->userModel->updateUserProfileData(
+                $idUsuario, 
+                $nombres, 
+                $apellidos, 
+                $correo, 
+                $telefono, 
+                $direccionDomicilio, 
+                $codigoPostal,
+                $idDistrito,
+                $fotoPerfilData
+            );
+
+            if($success){
+                $_SESSION['nombres'] = $nombres;
+                $_SESSION['emailUsuario'] = $correo;
+                header('Location: AuthController.php?action=showMisDatos&status=success');
+            }else{
+                header('Location: AuthController.php?action=showMisDatos&status=error');
+            }
+        }
+
+        public function changePassword(){
+            session_start();
+            if(!isset($_SESSION['idUsuario'])){
+                die('No autorizado');
+            }
+
+            $idUsuario = $_SESSION['idUsuario'];
+            $currentPassword = $_POST['currentPassword'] ?? '';
+            $newPassword = $_POST['newPassword'] ?? '';
+            $confirmPassword = $_POST['confirmPassword'] ?? '';
+
+            if(empty($currentPassword) || empty($newPassword) || empty($confirmPassword)){
+                header('Location: AuthController.php?action=showSeguridad&pass_status=empty'); exit();
+            }
+            if($newPassword !== $confirmPassword){
+                header('Location: AuthController.php?action=showSeguridad&pass_status=mismatch'); exit();
+            }
+            if(strlen($newPassword) < 8){
+                header('Location: AuthController.php?action=showSeguridad&pass_status=short'); exit();
+            }
+
+            $usuario = $this->userModel->getUserById($idUsuario);
+            if(!$usuario || !password_verify($currentPassword, $usuario['password'])){
+                header('Location: AuthController.php?action=showSeguridad&pass_status=wrong'); exit();
+            }
+
+            $success = $this->userModel->updatePassword($idUsuario, $newPassword);
+            if($success){
+                header('Location: AuthController.php?action=showSeguridad&pass_status=success');
+            } else {
+                header('Location: AuthController.php?action=showSeguridad&pass_status=error');
             }
         }
     }
@@ -162,6 +270,21 @@
             break;
         case 'completeRegister':
             $controller->completeRegister();
+            break;
+        case 'showMisDatos':
+            $controller->showMisDatos();
+            break;
+        case 'showSeguridad':
+            $controller->showSeguridad();
+            break;
+        case 'showPreferencias':
+            $controller->showPreferencias();
+            break;
+        case 'updateMisDatos':
+            $controller->updateMisDatos();
+            break;
+        case 'changePassword':
+            $controller->changePassword();
             break;
         default:
             die('Acción no válida');
