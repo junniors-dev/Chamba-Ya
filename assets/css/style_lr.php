@@ -12,9 +12,25 @@ body{
     background-size: cover;
 }
 
+/* Zona clickeable sobre el logo del fondo (vuelve al inicio) */
+.logo-home-link{
+    position: fixed;
+    top: 18px;
+    left: 22px;
+    width: 360px;
+    height: 130px;
+    z-index: 100;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 650px){
+    .logo-home-link{ top: 10px; left: 12px; width: 190px; height: 78px; }
+}
+
 .container{
     position: relative;
     width: 850px;
+    max-width: calc(100vw - 40px);
     height: 650px;
     background: #fff;
     border-radius: 30px;
@@ -99,13 +115,46 @@ form{
 }
 
 .link_olvido{
-    margin: -15px 0 15px;    
+    margin: -15px 0 15px;
 }
 
 .link_olvido a{
     font-size: 14.5px;
     color: #333;
     text-decoration: none;
+}
+
+.fila_recordarme{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: -10px 0 15px;
+    flex-wrap: wrap;
+}
+
+.check_recordarme{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.check_recordarme input{
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.fila_recordarme .btn_forgot_pass{
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    padding: 0;
+    background: none;
+    border: none;
 }
 
 .btn_link{ /*BOTONES DE INICIAR SESIÓN Y REGISTRARSE*/
@@ -236,6 +285,14 @@ form{
     background: transparent;
     border: 2px solid #fff;
     box-shadow: none;
+}
+
+@media screen and (max-width:860px) and (min-width:651px) {
+    .container{
+        width: 95%;
+        height: auto;
+        min-height: 650px;
+    }
 }
 
 @media screen and (max-width:650px) {

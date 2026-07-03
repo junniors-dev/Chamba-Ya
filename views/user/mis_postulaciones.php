@@ -55,9 +55,6 @@
                                         <?php echo ucfirst($postulacion['estado']); ?>
                                     </span>
                                 </div>
-                                <div class="acciones-tarjeta">
-                                    <button class="boton-accion" onclick="alert('Abriendo chat...')"><i class="fas fa-comment"></i> Chat</button>
-                                </div>
                             </div>
                         <?php endforeach; ?>   
                     <?php endif; ?>                   

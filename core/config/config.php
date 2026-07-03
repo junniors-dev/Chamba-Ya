@@ -29,4 +29,11 @@
             return $url;
         }
     }
+
+    // Link de WhatsApp para COMPARTIR (sin número fijo): abre el selector de contactos.
+    if (!function_exists('linkCompartirWhatsApp')) {
+        function linkCompartirWhatsApp(string $mensaje): string {
+            return 'https://wa.me/?text=' . rawurlencode($mensaje);
+        }
+    }
 ?>

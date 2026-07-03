@@ -10,6 +10,7 @@ require_once __DIR__ . '/../templates/header.php';
     <?php require_once __DIR__ . '/_banner_estado.php'; ?>
 
     <div class="container-servicio">
+        <a href="<?= BASE_URL ?>index.php?action=buscar-trabajo&tipo=servicio" class="btn-volver"><i class="fa-solid fa-arrow-left"></i> Volver a los servicios</a>
         <div class="wrapper-layout-servicio">
             
             <main class="col-perfil-principal">
@@ -20,7 +21,11 @@ require_once __DIR__ . '/../templates/header.php';
                         onerror="this.src='<?= $base_path ?>assets/uploads/img_perfiles/default.png';">
                     
                     <div class="info-usuario-titulo">
-                        <h1><?= htmlspecialchars($anuncio['nombres'] . ' ' . $anuncio['apellidos']) ?></h1>
+                        <h1>
+                            <a href="<?= BASE_URL ?>controllers/PerfilController.php?id=<?= (int) $anuncio['idUsuario'] ?>" style="color:inherit;text-decoration:none;">
+                                <?= htmlspecialchars($anuncio['nombres'] . ' ' . $anuncio['apellidos']) ?>
+                            </a>
+                        </h1>
                         <span class="rol-tag">Ofrece Servicio</span>
                     </div>
                 </div>
@@ -101,20 +106,30 @@ require_once __DIR__ . '/../templates/header.php';
                     <p><?= htmlspecialchars($anuncio['modalidad']) ?></p>
                 </div>
 
+                <div class="item-contacto-sidebar">
+                    <span>Vistas</span>
+                    <p><i class="fa-regular fa-eye"></i> <?= (int) ($anuncio['vistas'] ?? 0) ?></p>
+                </div>
+
                 <form action="<?= BASE_URL ?>controllers/PostulacionController.php" method="POST">
                     <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
                     <button class="btn-solicitar-servicio" id="btn-solicitar-service" type="submit">Contratar Servicio</button>
                 </form>
 
+                <?php
+                    $urlServicio = BASE_URL . 'index.php?action=detalle-anuncio&id=' . (int) $anuncio['idAnuncio'] . '&tipo=servicio';
+                    $mensajeCompartirServicio = 'Mira este servicio en Chamba Ya: "' . $anuncio['titulo'] . '" ' . $urlServicio;
+                ?>
+                <a class="btn-compartir-whatsapp" href="<?= htmlspecialchars(linkCompartirWhatsApp($mensajeCompartirServicio)) ?>" target="_blank" rel="noopener">
+                    <i class="fa-brands fa-whatsapp"></i> Compartir
+                </a>
+
                 <?php $esTrabFav = $esTrabajadorFavorito ?? false; ?>
                 <?php if (!isset($_SESSION['idUsuario']) || $_SESSION['idUsuario'] != $anuncio['idUsuario']): ?>
-                    <form action="<?= BASE_URL ?>controllers/TrabajadorFavoritoController.php" method="POST">
-                        <input type="hidden" name="idTrabajador" value="<?= (int) $anuncio['idUsuario'] ?>">
-                        <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
-                        <button type="submit" class="button_guardar_user">
-                            <i class="fa-regular fa-heart"></i> <?= $esTrabFav ? 'Quitar de mis trabajadores' : 'Guardar trabajador' ?>
-                        </button>
-                    </form>
+                    <button type="button" class="button_guardar_user"
+                        onclick="toggleFavoritoTrabajador(<?= (int) $anuncio['idUsuario'] ?>, this, <?= (int) $anuncio['idAnuncio'] ?>)">
+                        <i class="fa-regular fa-heart"></i> <?= $esTrabFav ? 'Quitar de mis trabajadores' : 'Guardar trabajador' ?>
+                    </button>
                 <?php endif; ?>
 
                 <?php $tipoReporte = 'servicio'; require __DIR__ . '/_form_reporte.php'; ?>
@@ -204,5 +219,8 @@ require_once __DIR__ . '/../templates/header.php';
             <?php endif; ?>
         </div>
     </div>
+    <?php require_once __DIR__ . '/../templates/footer.php'; ?>
+    <script>const basePath = "<?= BASE_URL ?>";</script>
+    <script src="<?= BASE_URL ?>assets/js/favoritos_ajax.js"></script>
 </body>
 </html>

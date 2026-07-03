@@ -13,6 +13,9 @@
 </head>
 
 <body>
+    <!-- Logo (dentro del fondo) clickeable: vuelve al inicio -->
+    <a href="<?= BASE_URL ?>index.php" class="logo-home-link" aria-label="Volver al inicio" title="Volver al inicio"></a>
+
     <!-- Apartado de inicio de sesión -->
     <div class="container">
         <div class="form_box login">
@@ -43,7 +46,10 @@
                     <input type="password" placeholder="Contraseña" required name="passwordInput">
                     <i class='bx bxs-lock-alt' ></i>
                 </div>
-                <div class="link_olvido">
+                <div class="fila_recordarme">
+                    <label class="check_recordarme">
+                        <input type="checkbox" name="recordarme" value="1"> Recordarme
+                    </label>
                     <a href="<?= BASE_URL ?>controllers/AuthController.php?action=showRecuperar" class="btn_forgot_pass">¿Olvidó su contraseña?</a>
                 </div>
                 <button type="submit" class="btn_link" name="login">Iniciar Sesión</button>
@@ -67,6 +73,7 @@
                         $regMsgs = [
                             'email_exists' => 'El correo ya está registrado.',
                             'mismatch'     => 'Las contraseñas no coinciden.',
+                            'short'        => 'La contraseña debe tener al menos 8 caracteres.',
                             'bad_format'   => 'Imagen no válida. Solo JPG o PNG.',
                             'too_big'      => 'La imagen supera el tamaño máximo (2 MB).',
                             'error'        => 'No se pudo completar el registro.',

@@ -14,6 +14,19 @@
             box-sizing: border-box;
         }
 
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            color: #d8a500;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: gap .15s ease, color .15s ease;
+        }
+        .btn-volver:hover { gap: 12px; color: #b98900; }
+
         .wrapper-layout-servicio {
             display: flex;
             gap: 30px;
@@ -172,6 +185,27 @@
             border-radius:8px;
             text-decoration:none;
             font-weight:600;
+        }
+
+        .btn-compartir-whatsapp {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+            padding: 12px;
+            background: #25D366;
+            color: #fff;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .btn-compartir-whatsapp:hover {
+            background: #1ebe5a;
         }
 
         .btn-solicitar-servicio {
@@ -347,5 +381,25 @@
 
         .btn-ver-detalle-mini:hover {
             background: #e2e8f0;
+        }
+
+        /* ===================== RESPONSIVE ===================== */
+        @media (max-width: 900px) {
+            .wrapper-layout-servicio { flex-direction: column; }
+            .col-sidebar-datos {
+                width: 100%;
+                position: static;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .container-servicio { margin: 20px auto; }
+            .col-perfil-principal { padding: 24px 20px; }
+            .encabezado-usuario { flex-direction: column; text-align: center; gap: 14px; }
+            .foto-perfil-avatar { width: 90px; height: 90px; }
+            .info-usuario-titulo h1 { font-size: 1.5rem; }
+            .grid-otros-servicios { grid-template-columns: 1fr; }
+            .form-calificar .rating label { font-size: 28px; }
         }
 </style>

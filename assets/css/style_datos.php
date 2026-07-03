@@ -136,4 +136,17 @@
         color: #b3261e;
         border: 1px solid #f5c2c0;
     }
+
+    @media (max-width: 768px) {
+        .form-container { padding: 30px 24px; }
+    }
+
+    @media (max-width: 560px) {
+        .form-container { padding: 24px 18px; margin: 12px; }
+        .form-container h1 { font-size: 1.5rem; }
+        .form-container h3 { font-size: 1rem; }
+        .form-container .profile-picture img { width: 100%; max-width: 280px; }
+        .form-container .form_buttons { flex-direction: column; gap: 12px; }
+        .form-row { gap: 0; }
+    }
 </style>

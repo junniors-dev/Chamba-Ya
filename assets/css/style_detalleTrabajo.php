@@ -14,6 +14,19 @@
             box-sizing: border-box;
         }
 
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            color: #007bff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: gap .15s ease, color .15s ease;
+        }
+        .btn-volver:hover { gap: 12px; color: #0056b3; }
+
         .titulo-seccion-detalle {
             text-align: center;
             font-size: 1.1rem;
@@ -193,6 +206,26 @@
             color: #212529;
         }
 
+        .btn-compartir-whatsapp {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            background: #25D366;
+            color: #fff;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .btn-compartir-whatsapp:hover {
+            background: #1ebe5a;
+        }
+
         /* Columna Derecha (Perfil del Ofertante) */
         .bloque-derecho-perfil {
             flex: 1;
@@ -250,6 +283,7 @@
         @media (max-width: 900px) {
             .layout-flex-detalle {
                 flex-direction: column;
+                align-items: stretch;
             }
 
             .bloque-derecho-perfil {
@@ -262,5 +296,16 @@
                 flex-direction: column;
                 gap: 12px;
             }
+        }
+
+        @media (max-width: 560px) {
+            .container-detalle { margin: 24px auto; }
+            .main-titulo-anuncio { font-size: 1.6rem; }
+            .tarjeta-principal-cuerpo { padding: 22px 18px; }
+            .caja-info-mini { font-size: 1.05rem; padding: 14px 18px; }
+            .descripcion-texto { font-size: 1.05rem; }
+            .grid-detalles-secundarios { grid-template-columns: 1fr; }
+            .bloque-acciones { flex-direction: column; }
+            .bloque-derecho-perfil { padding: 24px 20px; }
         }
 </style>

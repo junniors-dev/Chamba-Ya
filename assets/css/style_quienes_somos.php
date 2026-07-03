@@ -307,4 +307,15 @@
         flex-direction: column;
     }
 }
+
+@media (max-width: 480px) {
+    .about-hero { padding: 60px 18px; }
+    .about-hero h1 { font-size: 30px; }
+    .about-hero p { font-size: 16px; }
+    .mv-card { padding: 26px 20px; }
+    .values-section h2 { font-size: 26px; }
+    .about-cta { padding: 40px 20px; }
+    .about-cta h2 { font-size: 26px; }
+    .about-cta p { font-size: 16px; }
+}
 </style>

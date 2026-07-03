@@ -54,7 +54,7 @@
                         <p>Todavía no guardaste ningún trabajador. Cuando veas un perfil de servicio, usa "Guardar trabajador".</p>
                     <?php else: ?>
                         <?php foreach ($trabajadores as $t): ?>
-                            <div class="tarjeta-horizontal">
+                            <div class="tarjeta-horizontal" id="tarjeta-trabajador-<?= (int) $t['idUsuarioTrabajador'] ?>">
                                 <div class="imagen-tarjeta">
                                     <?php $foto = !empty($t['fotoPerfil']) ? $t['fotoPerfil'] : 'default.png'; ?>
                                     <img src="<?= BASE_URL ?>assets/uploads/img_perfiles/<?= htmlspecialchars($foto) ?>"
@@ -62,7 +62,11 @@
                                          onerror="this.src='<?= BASE_URL ?>assets/uploads/img_perfiles/default.png';">
                                 </div>
                                 <div class="cuerpo-tarjeta">
-                                    <h3><?= htmlspecialchars($t['nombres'] . ' ' . $t['apellidos']) ?></h3>
+                                    <h3>
+                                        <a href="<?= BASE_URL ?>controllers/PerfilController.php?id=<?= (int) $t['idUsuarioTrabajador'] ?>" style="color:inherit;text-decoration:none;">
+                                            <?= htmlspecialchars($t['nombres'] . ' ' . $t['apellidos']) ?>
+                                        </a>
+                                    </h3>
                                     <p><?= htmlspecialchars($t['descripcionPerfil'] ?? 'Sin descripción.') ?></p>
                                     <p style="font-size:.85rem;color:#666;">
                                         <i class="fas fa-star" style="color:#ffcc00;"></i> <?= $t['promedio'] !== null ? number_format($t['promedio'],1) : 'Sin calificaciones' ?>
@@ -78,13 +82,9 @@
                                             <i class="fa-brands fa-whatsapp"></i> WhatsApp
                                         </a>
                                     <?php endif; ?>
-                                    <form action="<?= BASE_URL ?>controllers/TrabajadorFavoritoController.php" method="POST">
-                                        <input type="hidden" name="idTrabajador" value="<?= (int) $t['idUsuarioTrabajador'] ?>">
-                                        <input type="hidden" name="origen" value="lista">
-                                        <button type="submit" class="boton-accion" onclick="return confirm('¿Quitar este trabajador?');">
-                                            <i class="fas fa-trash"></i> Quitar
-                                        </button>
-                                    </form>
+                                    <button type="button" class="boton-accion" onclick="quitarTrabajadorGuardado(<?= (int) $t['idUsuarioTrabajador'] ?>)">
+                                        <i class="fas fa-trash"></i> Quitar
+                                    </button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -94,6 +94,9 @@
         </main>
     </div>
 </div>
+
+<script>const basePath = "<?= BASE_URL ?>";</script>
+<script src="<?= BASE_URL ?>assets/js/favoritos_ajax.js"></script>
 
 </body>
 </html>

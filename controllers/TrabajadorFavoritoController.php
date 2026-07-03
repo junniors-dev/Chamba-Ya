@@ -16,21 +16,40 @@ class TrabajadorFavoritoController {
     public function alternar(): void {
         $idCliente    = obtenerIdUsuarioActivo();
         $idTrabajador = (int) ($_POST['idTrabajador'] ?? 0);
+        $esAjax = $this->esPeticionAjax();
 
         if ($idTrabajador <= 0 || !$this->modelo->usuarioExiste($idTrabajador)) {
-            $this->redirigir('error');
+            $this->responder($esAjax, false, 'error');
         }
         if ($idTrabajador === $idCliente) {
-            $this->redirigir('trab_propio');
+            $this->responder($esAjax, false, 'trab_propio');
         }
 
         if ($this->modelo->esFavorito($idCliente, $idTrabajador)) {
             $ok = $this->modelo->quitar($idCliente, $idTrabajador);
-            $this->redirigir($ok ? 'trab_quitado' : 'error');
+            $this->responder($esAjax, false, $ok ? 'trab_quitado' : 'error');
         } else {
             $ok = $this->modelo->agregar($idCliente, $idTrabajador);
-            $this->redirigir($ok ? 'trab_guardado' : 'error');
+            $this->responder($esAjax, true, $ok ? 'trab_guardado' : 'error');
         }
+    }
+
+    private function esPeticionAjax(): bool {
+        return ($_POST['ajax'] ?? '') === '1'
+            || (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+    }
+
+    private function responder(bool $esAjax, bool $esFavorito, string $estado): never {
+        if ($esAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'ok' => $estado !== 'error' && $estado !== 'trab_propio',
+                'esFavorito' => $esFavorito,
+                'estado' => $estado,
+            ]);
+            exit();
+        }
+        $this->redirigir($estado);
     }
 
     private function redirigir(string $estado): never {

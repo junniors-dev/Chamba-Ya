@@ -368,4 +368,12 @@
         font-size: 28px;
     }
 }
+
+@media (max-width: 480px) {
+    .terms-hero { padding: 60px 18px 70px; }
+    .terms-hero h1 { font-size: 24px; }
+    .terms-card { padding: 24px 16px; }
+    .terms-section h2 { font-size: 19px; }
+    .terms-section .section-number { width: 32px; height: 32px; font-size: 13px; }
+}
 </style>

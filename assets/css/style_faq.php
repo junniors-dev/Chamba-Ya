@@ -314,4 +314,14 @@
         padding: 0 20px 20px;
     }
 }
+
+@media (max-width: 480px) {
+    .faq-hero { padding: 48px 16px 60px; }
+    .faq-hero h1 { font-size: 24px; }
+    .faq-hero p { font-size: 15px; }
+    .faq-search-wrapper input { padding: 14px 18px 14px 48px; font-size: 15px; }
+    .faq-tab { padding: 14px 18px; }
+    .faq-question { padding: 16px; }
+    .faq-answer-inner { padding: 0 16px 18px; }
+}
 </style>

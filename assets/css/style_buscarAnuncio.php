@@ -455,4 +455,19 @@
             grid-template-columns: 1fr; 
         }
     }
+
+    /* ===================== ZONA TABLET INTERMEDIA ===================== */
+    @media (max-width: 1024px){
+        .wrapper-busqueda{ gap: 20px; padding: 24px 20px 36px; }
+    }
+
+    @media (max-width: 700px){
+        .title-banner-trabajo h1{ font-size: 1.7rem; }
+        .title-banner-trabajo p{ font-size: .95rem; }
+        .titulo-resultados{ font-size: 1.2rem; }
+    }
+
+    @media (max-width: 400px){
+        .grid-anuncios-layout{ grid-template-columns: 1fr; gap: 14px; }
+    }
 </style>

@@ -339,7 +339,8 @@ table tr:last-child td {
     }
 
     .banner {
-        height: 240px;
+        height: auto;
+        padding: 60px 20px 80px;
     }
 
     .banner-contenido h1 {
@@ -357,6 +358,15 @@ table tr:last-child td {
     .card ul {
         grid-template-columns: 1fr;
     }
+}
+
+@media (max-width: 480px) {
+    .banner { padding: 60px 18px 80px; height: auto; }
+    .banner-contenido h1 { font-size: 28px; }
+    .banner-contenido p { font-size: 14px; }
+    .contenedor { padding: 0 16px; margin-top: -40px; }
+    .card { padding: 20px 18px; }
+    .card h2 { font-size: 19px; }
 }
 
 </style>

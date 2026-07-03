@@ -544,9 +544,22 @@
     }
 
     @media (max-width: 560px){
-        .recientes_grid{ 
-            grid-template-columns: 1fr; 
+        .recientes_grid{
+            grid-template-columns: 1fr;
         }
+    }
+
+    @media (max-width: 480px){
+        .left_half h1, .right_half h1{ font-size: 27px; }
+        .left_half, .right_half{ padding: 36px 18px 54px; }
+        .left_half p, .right_half p{ font-size: 16px; }
+        .search_card{ padding: 22px 16px 20px; }
+        .search_card h2{ font-size: 21px; }
+        .categories_card{ flex: 0 0 150px; width: 150px; height: 150px; }
+        .categories_card img{ width: 76px; height: 76px; }
+        .categories_card h3{ font-size: 16px; }
+        .categories h2, .recientes h2, .why_chamba_ya h2{ font-size: 23px; }
+        .trust_strip{ gap: 12px 22px; }
     }
 
     @media (prefers-reduced-motion: reduce){

@@ -47,6 +47,7 @@ class AnuncioModel {
             LEFT JOIN calificacion cal ON u.idUsuario = cal.idUsuarioCalificado
 
             WHERE 1=1
+            AND a.estado NOT IN ('Cancelado', 'Finalizado')
             AND NOT (a.tipoAnuncio = 'servicio' AND u.visibilidad = 'oculto')";
             $params = [];
             
@@ -123,6 +124,18 @@ class AnuncioModel {
         }
     }
     
+    // Suma 1 vista al anuncio. Se llama una vez por carga de la página de detalle.
+    public function registrarVista($idAnuncio) {
+        try {
+            $stmt = $this->conn->prepare("UPDATE anuncio SET vistas = vistas + 1 WHERE idAnuncio = ?");
+            $stmt->execute([$idAnuncio]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Error en registrarVista: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function obtenerDetalleAnuncio($idAnuncio) {
     try {
         $sql = "SELECT a.*, 
@@ -146,6 +159,26 @@ class AnuncioModel {
         } catch (PDOException $e) {
             error_log("Error en obtenerDetalleAnuncio: " . $e->getMessage());
             return null;
+        }
+    }
+
+    // Para el perfil público: TODOS los servicios activos de un usuario (sin límite, sin excluir ninguno)
+    public function obtenerServiciosActivosDeUsuario($idUsuario) {
+        try {
+            $sql = "SELECT a.*, d.nombre AS nombre_distrito
+                    FROM anuncio a
+                    LEFT JOIN distrito d ON a.idDistrito = d.idDistrito
+                    WHERE a.idUsuario = :idUsuario
+                      AND a.tipoAnuncio = 'servicio'
+                      AND a.estado NOT IN ('Cancelado', 'Finalizado')
+                    ORDER BY a.fechaPublicacion DESC";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':idUsuario', $idUsuario, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error en obtenerServiciosActivosDeUsuario: " . $e->getMessage());
+            return [];
         }
     }
 
