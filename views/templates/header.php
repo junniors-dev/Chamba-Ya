@@ -94,6 +94,9 @@
                             <?= htmlspecialchars($_SESSION['nombres']); ?>
                         </p>
 
+                        <?php if (function_exists('esAdmin') && esAdmin()): ?>
+                            <a href="<?= BASE_URL ?>controllers/AdminController.php?action=dashboard" style="color:#f97316;font-weight:600;"><i class="fa-solid fa-shield-halved"></i> Panel Admin</a>
+                        <?php endif; ?>
                         <a href="<?= BASE_URL ?>controllers/AuthController.php?action=showMisDatos">Mis datos</a>
                         <a href="<?= BASE_URL ?>views/user/mis_postulaciones.php">Mis postulaciones</a>
                         <a href="<?= BASE_URL ?>views/user/mis_guardados.php">Anuncios guardados</a>

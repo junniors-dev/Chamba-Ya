@@ -78,6 +78,7 @@
                 $_SESSION['nombres'] = $usuario['nombres'];
                 $_SESSION['idUsuario'] = $usuario['idUsuario'];
                 $_SESSION['emailUsuario'] = $usuario['correo'];
+                $_SESSION['rol'] = $usuario['rol'] ?? 'usuario';
 
                 // "Recordarme": crea una cookie persistente segura (30 días).
                 if($recordarme){
@@ -189,6 +190,7 @@
                 $_SESSION['idUsuario'] = $usuario['idUsuario'];
                 $_SESSION['nombres'] = $usuario['nombres'];
                 $_SESSION['emailUsuario'] = $usuario['correo'];
+                $_SESSION['rol'] = 'usuario'; // los nuevos registros siempre son rol usuario
 
                 unset($_SESSION['registro_email']);
                 unset($_SESSION['registro_password']);
