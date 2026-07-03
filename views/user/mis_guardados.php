@@ -52,7 +52,7 @@
                         <p>Actualmente no tienes anuncios guardados</p>
                     <?php else: ?>
                         <?php foreach ($anuncios_favoritos as $fav): ?>
-                            <div class="tarjeta-horizontal">
+                            <div class="tarjeta-horizontal" id="tarjeta-guardado-<?= (int) $fav['id'] ?>">
                                 <div class="imagen-tarjeta"><i class="fas fa-bookmark fa-2x" style="color: var(--purpura-principal);"></i></div>
                                 <div class="cuerpo-tarjeta">
                                     <h3><?php echo htmlspecialchars($fav['titulo']); ?></h3>
@@ -71,13 +71,9 @@
                                     <?php endif; ?>
                                 </div>
                                 <div class="acciones-tarjeta">
-                                    <form action="<?= BASE_URL ?>controllers/AnuncioGuardadoController.php" method="POST">
-                                        <input type="hidden" name="idAnuncio" value="<?= (int) $fav['id'] ?>">
-                                        <input type="hidden" name="origen" value="guardados">
-                                        <button type="submit" class="boton-accion" onclick="return confirm('¿Quitar este anuncio de guardados?');">
-                                            <i class="fas fa-trash"></i> Quitar
-                                        </button>
-                                    </form>
+                                    <button type="button" class="boton-accion" onclick="quitarAnuncioGuardado(<?= (int) $fav['id'] ?>)">
+                                        <i class="fas fa-trash"></i> Quitar
+                                    </button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -88,7 +84,9 @@
     </div>
 </div>
 
-<script src="<?= BASE_URL ?>assets/js/script_Anuncios.js?v=<?php echo time(); ?>"></script>
+<script>const basePath = "<?= BASE_URL ?>";</script>
+<script src="<?= BASE_URL ?>assets/js/favoritos_ajax.js"></script>
+<script src="<?= BASE_URL ?>assets/js/script_Anuncios.js"></script>
 
 </body>
 </html>

@@ -206,6 +206,26 @@
             color: #212529;
         }
 
+        .btn-compartir-whatsapp {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            background: #25D366;
+            color: #fff;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .btn-compartir-whatsapp:hover {
+            background: #1ebe5a;
+        }
+
         /* Columna Derecha (Perfil del Ofertante) */
         .bloque-derecho-perfil {
             flex: 1;

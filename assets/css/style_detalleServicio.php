@@ -187,6 +187,27 @@
             font-weight:600;
         }
 
+        .btn-compartir-whatsapp {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+            padding: 12px;
+            background: #25D366;
+            color: #fff;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .btn-compartir-whatsapp:hover {
+            background: #1ebe5a;
+        }
+
         .btn-solicitar-servicio {
             width: 100%;
             background: #d8a500;

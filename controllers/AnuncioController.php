@@ -50,7 +50,11 @@ class AnuncioController {
             header("Location: " . BASE_URL . "index.php?error=anuncio_no_existe");
             exit();
         }
-        
+
+        // Suma una vista cada vez que se abre el detalle (una por carga de página)
+        $model->registrarVista($idAnuncio);
+        $anuncio['vistas'] = (int) ($anuncio['vistas'] ?? 0) + 1;
+
         // Obtener la calificación promedio del usuario que publicó el anuncio
         $calificacion = $modeloUser->obtenerCalificacionUsuario($anuncio['idUsuario']);
         $puntaje = round($calificacion['puntaje'] ?? 0);
