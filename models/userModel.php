@@ -8,9 +8,9 @@
             $this->conn = $database->getConnection();
         }
 
-        public function createUser($fotoPerfil, $nombres, $apellidos, $descripcionPerfil, $telefono, $correo, $password, $direccionDomicilio, $codigoPostal, $fechaRegistro, $estado, $idDistrito){
+        // $passwordHash llega YA hasheado desde AuthController::registerFirst
+        public function createUser($fotoPerfil, $nombres, $apellidos, $descripcionPerfil, $telefono, $correo, $passwordHash, $direccionDomicilio, $codigoPostal, $fechaRegistro, $estado, $idDistrito){
             $sql = "INSERT INTO usuario (fotoPerfil, nombres, apellidos, descripcionPerfil, telefono, correo, password, direccionDomicilio, codigoPostal, fechaRegistro, estado, idDistrito) VALUES (:fotoPerfil, :nombres, :apellidos, :descripcionPerfil, :telefono, :correo, :password, :direccionDomicilio, :codigoPostal, :fechaRegistro, :estado, :idDistrito)";
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $date = date('Y-m-d H:i:s');
 
             $stmt = $this->conn->prepare($sql);
@@ -20,7 +20,7 @@
             $stmt->bindParam(':descripcionPerfil', $descripcionPerfil);
             $stmt->bindParam(':telefono', $telefono);
             $stmt->bindParam(':correo', $correo);
-            $stmt->bindParam(':password', $password_hash);
+            $stmt->bindParam(':password', $passwordHash);
             $stmt->bindParam(':direccionDomicilio', $direccionDomicilio);
             $stmt->bindParam(':codigoPostal', $codigoPostal);
             $stmt->bindParam(':fechaRegistro', $date);
@@ -72,9 +72,17 @@
         // Borra al usuario y todo lo que depende de él, en una transacción.
         public function eliminarCuentaCompleta($id){
             try {
+                // Guardamos el nombre de la foto ANTES de borrar la fila
+                $stmtFoto = $this->conn->prepare("SELECT fotoPerfil FROM usuario WHERE idUsuario = ?");
+                $stmtFoto->execute([$id]);
+                $foto = $stmtFoto->fetchColumn();
+
                 $this->conn->beginTransaction();
 
                 $consultas = [
+                    "DELETE FROM notificacion WHERE idUsuario = ?",
+                    "DELETE FROM reporte WHERE idUsuarioReporta = ? OR idUsuarioReportado = ?",
+                    "DELETE FROM reporte WHERE idAnuncio IN (SELECT idAnuncio FROM anuncio WHERE idUsuario = ?)",
                     "DELETE FROM postulacion WHERE idUsuario = ?",
                     "DELETE FROM postulacion WHERE idAnuncio IN (SELECT idAnuncio FROM anuncio WHERE idUsuario = ?)",
                     "DELETE FROM anunciosfavoritos WHERE idUsuario = ?",
@@ -92,6 +100,15 @@
                 }
 
                 $this->conn->commit();
+
+                // Borra la foto de perfil del disco (después del commit, nunca la default)
+                if ($foto) {
+                    $foto = basename($foto);
+                    if ($foto !== 'default.png') {
+                        $ruta = __DIR__ . '/../assets/uploads/img_perfiles/' . $foto;
+                        if (is_file($ruta)) { @unlink($ruta); }
+                    }
+                }
                 return true;
             } catch (Exception $e) {
                 $this->conn->rollBack();

@@ -179,6 +179,8 @@
                 <label>Estado</label>
                 <select name="estado" id="estado-chamba">
                     <option value="activo">Activo</option>
+                    <option value="en_proceso">En proceso</option>
+                    <option value="finalizado">Finalizado</option>
                     <option value="oculto">Oculto</option>
                 </select>
             </div>

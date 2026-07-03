@@ -34,10 +34,14 @@
 
             <div class="actions">
 
+            <?php
+                // El buscador respeta el tipo que estás viendo (trabajo o servicio)
+                $tipoBusquedaHeader = in_array($_GET['tipo'] ?? '', ['trabajo', 'servicio']) ? $_GET['tipo'] : 'trabajo';
+            ?>
             <form class="search_box" method="GET" action="<?= BASE_URL ?>index.php" role="search">
                 <input type="hidden" name="action" value="buscar-trabajo">
-                <input type="hidden" name="tipo" value="trabajo">
-                <input type="text" name="search" placeholder="Buscar..."
+                <input type="hidden" name="tipo" value="<?= htmlspecialchars($tipoBusquedaHeader) ?>">
+                <input type="text" name="search" placeholder="<?= $tipoBusquedaHeader === 'servicio' ? 'Buscar servicios...' : 'Buscar trabajos...' ?>"
                     value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
                 <button type="submit" aria-label="Buscar"
                     style="position:absolute; right:15px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; padding:0; color:#000;">

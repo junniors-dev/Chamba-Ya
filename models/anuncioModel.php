@@ -47,6 +47,7 @@ class AnuncioModel {
             LEFT JOIN calificacion cal ON u.idUsuario = cal.idUsuarioCalificado
 
             WHERE 1=1
+            AND a.estado NOT IN ('Cancelado', 'Finalizado')
             AND NOT (a.tipoAnuncio = 'servicio' AND u.visibilidad = 'oculto')";
             $params = [];
             

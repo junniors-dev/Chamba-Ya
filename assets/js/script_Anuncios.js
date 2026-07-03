@@ -279,11 +279,11 @@ function abrirEdicion(btn) {
     const tipoEl = document.getElementById('tipo-chamba');
     if (tipoEl) tipoEl.value = tipo || 'Trabajo';
 
-    // === CORRECCIÓN BUG 1: Mapear valor de BD → valor del select del formulario ===
+    // Mapear valor de BD → valor del select (1 a 1, sin perder el estado real)
     const mapaEstado = {
-        'Disponible': 'activo',
-        'En proceso': 'activo',
-        'Finalizado':  'oculto',
+        'Disponible':  'activo',
+        'En proceso':  'en_proceso',
+        'Finalizado':  'finalizado',
         'Cancelado':   'oculto',
     };
     const estadoEl = document.getElementById('estado-chamba');

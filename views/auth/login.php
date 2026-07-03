@@ -70,6 +70,7 @@
                         $regMsgs = [
                             'email_exists' => 'El correo ya está registrado.',
                             'mismatch'     => 'Las contraseñas no coinciden.',
+                            'short'        => 'La contraseña debe tener al menos 8 caracteres.',
                             'bad_format'   => 'Imagen no válida. Solo JPG o PNG.',
                             'too_big'      => 'La imagen supera el tamaño máximo (2 MB).',
                             'error'        => 'No se pudo completar el registro.',

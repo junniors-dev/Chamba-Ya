@@ -39,6 +39,18 @@ class PostulacionModel {
         }
     }
 
+    public function obtenerEstadoAnuncio($idAnuncio): ?string {
+        try {
+            $stmt = $this->conn->prepare("SELECT estado FROM anuncio WHERE idAnuncio = ?");
+            $stmt->execute([$idAnuncio]);
+            $r = $stmt->fetchColumn();
+            return $r === false ? null : (string) $r;
+        } catch (Exception $e) {
+            error_log("Error al obtener estado del anuncio: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function obtenerIdDuenioAnuncio($idAnuncio) {
         try {
             $stmt = $this->conn->prepare("SELECT idUsuario FROM anuncio WHERE idAnuncio = ?");
