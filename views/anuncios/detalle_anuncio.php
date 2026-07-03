@@ -11,6 +11,7 @@
     <?php require_once __DIR__ . '/_banner_estado.php'; ?>
 
     <div class="container-detalle">
+        <a href="<?= BASE_URL ?>index.php?action=buscar-trabajo&tipo=trabajo" class="btn-volver"><i class="fa-solid fa-arrow-left"></i> Volver a las ofertas</a>
         <!-- Rótulo de la Sección -->
         <div class="titulo-seccion-detalle">Detalles del Trabajo</div>
         

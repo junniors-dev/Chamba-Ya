@@ -12,6 +12,21 @@ body{
     background-size: cover;
 }
 
+/* Zona clickeable sobre el logo del fondo (vuelve al inicio) */
+.logo-home-link{
+    position: fixed;
+    top: 18px;
+    left: 22px;
+    width: 360px;
+    height: 130px;
+    z-index: 100;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 650px){
+    .logo-home-link{ top: 10px; left: 12px; width: 190px; height: 78px; }
+}
+
 .container{
     position: relative;
     width: 850px;

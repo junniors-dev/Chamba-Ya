@@ -160,7 +160,14 @@
         }
 
         public function updateUserProfileData($id, $nombres, $apellidos, $correo, $telefono, $direccionDomicilio, $codigoPostal, $idDistrito = null, $fotoPerfil = null){
+            // Si se sube una foto nueva, guardamos la anterior para borrarla del disco luego
+            $fotoAnterior = null;
             if($fotoPerfil){
+                $stmtFoto = $this->conn->prepare("SELECT fotoPerfil FROM usuario WHERE idUsuario = :id");
+                $stmtFoto->bindParam(':id', $id);
+                $stmtFoto->execute();
+                $fotoAnterior = $stmtFoto->fetchColumn();
+
                 $sql = "UPDATE usuario SET nombres = :nombres, apellidos = :apellidos, correo = :correo, telefono = :telefono, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, idDistrito = :idDistrito, fotoPerfil = :fotoPerfil WHERE idUsuario = :id";
             } else {
                 $sql = "UPDATE usuario SET nombres = :nombres, apellidos = :apellidos, correo = :correo, telefono = :telefono, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, idDistrito = :idDistrito WHERE idUsuario = :id";
@@ -174,13 +181,26 @@
             $stmt->bindParam(':direccionDomicilio', $direccionDomicilio);
             $stmt->bindParam(':codigoPostal', $codigoPostal);
             $stmt->bindParam(':idDistrito', $idDistrito);
-            
+
             if($fotoPerfil){
                 $stmt->bindParam(':fotoPerfil', $fotoPerfil);
             }
-            
-            return $stmt->execute();
 
+            $resultado = $stmt->execute();
+
+            // Elimina la foto anterior del filesystem (solo si el update fue exitoso,
+            // hay foto nueva, y la anterior no es la default ni la misma).
+            if($resultado && $fotoPerfil && $fotoAnterior){
+                $fotoAnterior = basename($fotoAnterior); // evita path traversal
+                if($fotoAnterior !== 'default.png' && $fotoAnterior !== basename($fotoPerfil)){
+                    $ruta = __DIR__ . '/../assets/uploads/img_perfiles/' . $fotoAnterior;
+                    if(is_file($ruta)){
+                        @unlink($ruta);
+                    }
+                }
+            }
+
+            return $resultado;
         }
         public function obtenerCalificacionUsuario($idUsuario){
             try{

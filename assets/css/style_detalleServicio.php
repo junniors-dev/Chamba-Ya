@@ -14,6 +14,19 @@
             box-sizing: border-box;
         }
 
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            color: #d8a500;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: gap .15s ease, color .15s ease;
+        }
+        .btn-volver:hover { gap: 12px; color: #b98900; }
+
         .wrapper-layout-servicio {
             display: flex;
             gap: 30px;

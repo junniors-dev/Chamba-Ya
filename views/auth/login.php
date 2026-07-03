@@ -13,6 +13,9 @@
 </head>
 
 <body>
+    <!-- Logo (dentro del fondo) clickeable: vuelve al inicio -->
+    <a href="<?= BASE_URL ?>index.php" class="logo-home-link" aria-label="Volver al inicio" title="Volver al inicio"></a>
+
     <!-- Apartado de inicio de sesión -->
     <div class="container">
         <div class="form_box login">
