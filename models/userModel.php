@@ -261,5 +261,32 @@
                 return ['puntaje' => 0];
             }
         }
+
+        // Resumen para el mini-dashboard del perfil:
+        // total de anuncios, suma de vistas, postulaciones recibidas y calificación promedio.
+        public function obtenerEstadisticasPerfil($idUsuario){
+            try{
+                $sql = "SELECT
+                            (SELECT COUNT(*) FROM anuncio WHERE idUsuario = :id1) AS anuncios,
+                            (SELECT COALESCE(SUM(vistas),0) FROM anuncio WHERE idUsuario = :id2) AS vistas,
+                            (SELECT COUNT(*)
+                                FROM postulacion p
+                                INNER JOIN anuncio a ON p.idAnuncio = a.idAnuncio
+                                WHERE a.idUsuario = :id3) AS postulaciones,
+                            (SELECT COALESCE(ROUND(AVG(puntaje),1),0)
+                                FROM calificacion
+                                WHERE idUsuarioCalificado = :id4) AS calificacion";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bindValue(':id1', $idUsuario, PDO::PARAM_INT);
+                $stmt->bindValue(':id2', $idUsuario, PDO::PARAM_INT);
+                $stmt->bindValue(':id3', $idUsuario, PDO::PARAM_INT);
+                $stmt->bindValue(':id4', $idUsuario, PDO::PARAM_INT);
+                $stmt->execute();
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }catch(PDOException $e){
+                error_log("Error al obtenerEstadisticasPerfil: " . $e->getMessage());
+                return ['anuncios' => 0, 'vistas' => 0, 'postulaciones' => 0, 'calificacion' => 0];
+            }
+        }
     }
 ?>
