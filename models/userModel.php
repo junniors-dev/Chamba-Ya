@@ -8,9 +8,9 @@
             $this->conn = $database->getConnection();
         }
 
-        public function createUser($fotoPerfil, $nombres, $apellidos, $descripcionPerfil, $telefono, $correo, $password, $direccionDomicilio, $codigoPostal, $fechaRegistro, $estado, $idDistrito){
+        // $passwordHash llega YA hasheado desde AuthController::registerFirst
+        public function createUser($fotoPerfil, $nombres, $apellidos, $descripcionPerfil, $telefono, $correo, $passwordHash, $direccionDomicilio, $codigoPostal, $fechaRegistro, $estado, $idDistrito){
             $sql = "INSERT INTO usuario (fotoPerfil, nombres, apellidos, descripcionPerfil, telefono, correo, password, direccionDomicilio, codigoPostal, fechaRegistro, estado, idDistrito) VALUES (:fotoPerfil, :nombres, :apellidos, :descripcionPerfil, :telefono, :correo, :password, :direccionDomicilio, :codigoPostal, :fechaRegistro, :estado, :idDistrito)";
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
             $date = date('Y-m-d H:i:s');
 
             $stmt = $this->conn->prepare($sql);
@@ -20,7 +20,7 @@
             $stmt->bindParam(':descripcionPerfil', $descripcionPerfil);
             $stmt->bindParam(':telefono', $telefono);
             $stmt->bindParam(':correo', $correo);
-            $stmt->bindParam(':password', $password_hash);
+            $stmt->bindParam(':password', $passwordHash);
             $stmt->bindParam(':direccionDomicilio', $direccionDomicilio);
             $stmt->bindParam(':codigoPostal', $codigoPostal);
             $stmt->bindParam(':fechaRegistro', $date);
@@ -72,9 +72,17 @@
         // Borra al usuario y todo lo que depende de él, en una transacción.
         public function eliminarCuentaCompleta($id){
             try {
+                // Guardamos el nombre de la foto ANTES de borrar la fila
+                $stmtFoto = $this->conn->prepare("SELECT fotoPerfil FROM usuario WHERE idUsuario = ?");
+                $stmtFoto->execute([$id]);
+                $foto = $stmtFoto->fetchColumn();
+
                 $this->conn->beginTransaction();
 
                 $consultas = [
+                    "DELETE FROM notificacion WHERE idUsuario = ?",
+                    "DELETE FROM reporte WHERE idUsuarioReporta = ? OR idUsuarioReportado = ?",
+                    "DELETE FROM reporte WHERE idAnuncio IN (SELECT idAnuncio FROM anuncio WHERE idUsuario = ?)",
                     "DELETE FROM postulacion WHERE idUsuario = ?",
                     "DELETE FROM postulacion WHERE idAnuncio IN (SELECT idAnuncio FROM anuncio WHERE idUsuario = ?)",
                     "DELETE FROM anunciosfavoritos WHERE idUsuario = ?",
@@ -92,6 +100,15 @@
                 }
 
                 $this->conn->commit();
+
+                // Borra la foto de perfil del disco (después del commit, nunca la default)
+                if ($foto) {
+                    $foto = basename($foto);
+                    if ($foto !== 'default.png') {
+                        $ruta = __DIR__ . '/../assets/uploads/img_perfiles/' . $foto;
+                        if (is_file($ruta)) { @unlink($ruta); }
+                    }
+                }
                 return true;
             } catch (Exception $e) {
                 $this->conn->rollBack();
@@ -160,7 +177,14 @@
         }
 
         public function updateUserProfileData($id, $nombres, $apellidos, $correo, $telefono, $direccionDomicilio, $codigoPostal, $idDistrito = null, $fotoPerfil = null){
+            // Si se sube una foto nueva, guardamos la anterior para borrarla del disco luego
+            $fotoAnterior = null;
             if($fotoPerfil){
+                $stmtFoto = $this->conn->prepare("SELECT fotoPerfil FROM usuario WHERE idUsuario = :id");
+                $stmtFoto->bindParam(':id', $id);
+                $stmtFoto->execute();
+                $fotoAnterior = $stmtFoto->fetchColumn();
+
                 $sql = "UPDATE usuario SET nombres = :nombres, apellidos = :apellidos, correo = :correo, telefono = :telefono, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, idDistrito = :idDistrito, fotoPerfil = :fotoPerfil WHERE idUsuario = :id";
             } else {
                 $sql = "UPDATE usuario SET nombres = :nombres, apellidos = :apellidos, correo = :correo, telefono = :telefono, direccionDomicilio = :direccionDomicilio, codigoPostal = :codigoPostal, idDistrito = :idDistrito WHERE idUsuario = :id";
@@ -174,13 +198,26 @@
             $stmt->bindParam(':direccionDomicilio', $direccionDomicilio);
             $stmt->bindParam(':codigoPostal', $codigoPostal);
             $stmt->bindParam(':idDistrito', $idDistrito);
-            
+
             if($fotoPerfil){
                 $stmt->bindParam(':fotoPerfil', $fotoPerfil);
             }
-            
-            return $stmt->execute();
 
+            $resultado = $stmt->execute();
+
+            // Elimina la foto anterior del filesystem (solo si el update fue exitoso,
+            // hay foto nueva, y la anterior no es la default ni la misma).
+            if($resultado && $fotoPerfil && $fotoAnterior){
+                $fotoAnterior = basename($fotoAnterior); // evita path traversal
+                if($fotoAnterior !== 'default.png' && $fotoAnterior !== basename($fotoPerfil)){
+                    $ruta = __DIR__ . '/../assets/uploads/img_perfiles/' . $fotoAnterior;
+                    if(is_file($ruta)){
+                        @unlink($ruta);
+                    }
+                }
+            }
+
+            return $resultado;
         }
         public function obtenerCalificacionUsuario($idUsuario){
             try{

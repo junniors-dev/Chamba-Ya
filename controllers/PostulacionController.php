@@ -28,6 +28,10 @@ class PostulacionController {
         if ($dueno === $idUsuario) {
             $this->redirigir($idAnuncio, 'propio');
         }
+        // Solo se puede postular a anuncios disponibles (no cancelados/finalizados/en proceso)
+        if ($this->modelo->obtenerEstadoAnuncio($idAnuncio) !== 'Disponible') {
+            $this->redirigir($idAnuncio, 'no_disponible');
+        }
         if ($this->modelo->yaPostulado($idUsuario, $idAnuncio)) {
             $this->redirigir($idAnuncio, 'duplicado');
         }

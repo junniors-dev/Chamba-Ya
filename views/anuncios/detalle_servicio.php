@@ -10,6 +10,7 @@ require_once __DIR__ . '/../templates/header.php';
     <?php require_once __DIR__ . '/_banner_estado.php'; ?>
 
     <div class="container-servicio">
+        <a href="<?= BASE_URL ?>index.php?action=buscar-trabajo&tipo=servicio" class="btn-volver"><i class="fa-solid fa-arrow-left"></i> Volver a los servicios</a>
         <div class="wrapper-layout-servicio">
             
             <main class="col-perfil-principal">

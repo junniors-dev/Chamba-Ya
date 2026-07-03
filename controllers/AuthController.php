@@ -28,8 +28,15 @@
                 exit();
             }
 
+            // Misma regla que en cambiar/recuperar contraseña
+            if(strlen($password) < 8){
+                header('Location: ' . BASE_URL . 'views/auth/login.php?reg_status=short');
+                exit();
+            }
+
             $_SESSION['registro_email'] = $email;
-            $_SESSION['registro_password'] = $password;
+            // Se guarda el HASH, nunca la contraseña en texto plano
+            $_SESSION['registro_password'] = password_hash($password, PASSWORD_DEFAULT);
 
             header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos');
             exit();
@@ -98,7 +105,9 @@
             $codigoPostal = $_POST['codigoPostal'] ?? '';
             $fechaRegistro = date('Y-m-d H:i:s');
             $estado = 'Activo';
-            $idDistrito = $_POST['distrito'] ?? '';
+            // null si no eligió distrito (antes: '' rompía la FK con error fatal)
+            $idDistrito = !empty($_POST['distrito']) ? $_POST['distrito'] : null;
+            $nombreFoto = null; // si no sube foto, queda null (antes: variable indefinida)
 
             // Solo procesar la imagen si el usuario subió una
             if(isset($_FILES['fotoPerfil']) && $_FILES['fotoPerfil']['error'] === UPLOAD_ERR_OK){

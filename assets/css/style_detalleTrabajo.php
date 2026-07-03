@@ -14,6 +14,19 @@
             box-sizing: border-box;
         }
 
+        .btn-volver {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+            color: #007bff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: gap .15s ease, color .15s ease;
+        }
+        .btn-volver:hover { gap: 12px; color: #0056b3; }
+
         .titulo-seccion-detalle {
             text-align: center;
             font-size: 1.1rem;

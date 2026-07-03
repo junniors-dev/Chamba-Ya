@@ -4,6 +4,7 @@ if (!empty($_GET['estado'])):
     $bannerMsgs = [
         'postulado'    => ['¡Te postulaste con éxito!',                 '#16a34a'],
         'duplicado'    => ['Ya te habías postulado a este anuncio.',     '#d97706'],
+        'no_disponible'=> ['Este anuncio ya no está disponible para postular.', '#d97706'],
         'propio'       => ['No puedes postularte a tu propio anuncio.',  '#d97706'],
         'fav_guardado' => ['Anuncio agregado a tus guardados.',          '#16a34a'],
         'fav_quitado'  => ['Anuncio quitado de tus guardados.',          '#64748b'],

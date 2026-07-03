@@ -46,7 +46,14 @@ class AnuncioCreadoController {
     }
 
     private function capturarDatos(): array {
-        $mapaEstado = ['activo' => 'Disponible', 'oculto' => 'Cancelado'];
+        // Mapa completo: cada estado del formulario corresponde a su estado real en BD
+        // (antes 'Finalizado' se perdía: se convertía en 'Cancelado' al editar)
+        $mapaEstado = [
+            'activo'      => 'Disponible',
+            'en_proceso'  => 'En proceso',
+            'finalizado'  => 'Finalizado',
+            'oculto'      => 'Cancelado',
+        ];
         $estadoForm = $_POST['estado'] ?? 'activo';
 
         return [
