@@ -61,6 +61,7 @@
 
             $correo = $_POST['emailInput'] ?? '';
             $password = $_POST['passwordInput'] ?? '';
+            $recordarme = isset($_POST['recordarme']);
 
             $usuario = $this->userModel->getUserByEmail($correo);
 
@@ -77,12 +78,34 @@
                 $_SESSION['nombres'] = $usuario['nombres'];
                 $_SESSION['idUsuario'] = $usuario['idUsuario'];
                 $_SESSION['emailUsuario'] = $usuario['correo'];
+
+                // "Recordarme": crea una cookie persistente segura (30 días).
+                if($recordarme){
+                    $this->crearCookieRecordarme($usuario['idUsuario']);
+                }
+
                 header('Location: ' . BASE_URL . 'index.php');
                 exit();
             } else {
                 header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=wrong_password');
                 exit();
             }
+        }
+
+        // Genera un token aleatorio: el hash va a la BD, el token plano a la cookie.
+        private function crearCookieRecordarme($idUsuario): void {
+            $tokenPlano = bin2hex(random_bytes(32));
+            $tokenHash  = hash('sha256', $tokenPlano);
+            $expira     = date('Y-m-d H:i:s', strtotime('+30 days'));
+
+            $this->userModel->guardarRememberToken($idUsuario, $tokenHash, $expira);
+
+            setcookie('remember_token', $tokenPlano, [
+                'expires'  => strtotime('+30 days'),
+                'path'     => '/',
+                'httponly' => true,   // JS no puede leerla (protege de XSS)
+                'samesite' => 'Lax',
+            ]);
         }
 
         public function completeRegister(){

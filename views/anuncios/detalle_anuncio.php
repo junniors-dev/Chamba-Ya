@@ -60,6 +60,10 @@
                             <span class="label">Estado del trabajo:</span>
                             <span class="valor"><?= htmlspecialchars($anuncio['estado']) ?></span>
                         </div>
+                        <div class="item-secundario">
+                            <span class="label">Vistas:</span>
+                            <span class="valor"><i class="fa-regular fa-eye"></i> <?= (int) ($anuncio['vistas'] ?? 0) ?></span>
+                        </div>
                     </div>
                     
                     <!-- Bloque de Categorías Embebidas -->
@@ -83,12 +87,16 @@
                             <button class="btn-postular" type="submit">Contactar / Postularse</button>
                         </form>
                         <?php $esFavorito = $esFavorito ?? false; ?>
-                        <form action="<?= BASE_URL ?>controllers/AnuncioGuardadoController.php" method="POST" style="display:inline;">
-                            <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
-                            <button class="btn-favorito" type="submit">
-                                <?= $esFavorito ? 'Quitar de Favoritos' : 'Añadir a Favoritos' ?>
-                            </button>
-                        </form>
+                        <button type="button" class="btn-favorito" onclick="toggleFavoritoAnuncio(<?= (int) $anuncio['idAnuncio'] ?>, this)">
+                            <?= $esFavorito ? 'Quitar de Favoritos' : 'Añadir a Favoritos' ?>
+                        </button>
+                        <?php
+                            $urlAnuncio = BASE_URL . 'index.php?action=detalle-anuncio&id=' . (int) $anuncio['idAnuncio'] . '&tipo=trabajo';
+                            $mensajeCompartir = 'Mira esta oferta de trabajo en Chamba Ya: "' . $anuncio['titulo'] . '" ' . $urlAnuncio;
+                        ?>
+                        <a class="btn-compartir-whatsapp" href="<?= htmlspecialchars(linkCompartirWhatsApp($mensajeCompartir)) ?>" target="_blank" rel="noopener">
+                            <i class="fa-brands fa-whatsapp"></i> Compartir
+                        </a>
                     </div>
                 </div>
             </div>
@@ -147,5 +155,7 @@
         </div>
     </div>
     <?php require_once __DIR__ . '/../templates/footer.php'; ?>
+    <script>const basePath = "<?= BASE_URL ?>";</script>
+    <script src="<?= BASE_URL ?>assets/js/favoritos_ajax.js"></script>
 </body>
 </html>

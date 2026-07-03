@@ -115,13 +115,46 @@ form{
 }
 
 .link_olvido{
-    margin: -15px 0 15px;    
+    margin: -15px 0 15px;
 }
 
 .link_olvido a{
     font-size: 14.5px;
     color: #333;
     text-decoration: none;
+}
+
+.fila_recordarme{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: -10px 0 15px;
+    flex-wrap: wrap;
+}
+
+.check_recordarme{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.check_recordarme input{
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.fila_recordarme .btn_forgot_pass{
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    padding: 0;
+    background: none;
+    border: none;
 }
 
 .btn_link{ /*BOTONES DE INICIAR SESIÓN Y REGISTRARSE*/

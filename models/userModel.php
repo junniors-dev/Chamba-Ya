@@ -55,6 +55,34 @@
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
+        // ===== "Recordarme" (cookie de sesión persistente) =====
+        // Guarda el HASH del token (nunca el token en texto plano) junto a su fecha de expiración.
+        public function guardarRememberToken($id, $tokenHash, $expira){
+            $sql = "UPDATE usuario SET remember_token = :token, remember_token_expira = :expira WHERE idUsuario = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':token', $tokenHash);
+            $stmt->bindParam(':expira', $expira);
+            $stmt->bindParam(':id', $id);
+            return $stmt->execute();
+        }
+
+        // Busca un usuario activo por el hash del remember_token, solo si no expiró.
+        public function getUserByRememberToken($tokenHash){
+            $sql = "SELECT * FROM usuario WHERE remember_token = :token AND remember_token_expira > NOW()";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':token', $tokenHash);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        // Invalida el remember_token (logout, o rotación tras usarlo).
+        public function limpiarRememberToken($id){
+            $sql = "UPDATE usuario SET remember_token = NULL, remember_token_expira = NULL WHERE idUsuario = :id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            return $stmt->execute();
+        }
+
         public function desactivarUsuario($id){
             $sql = "UPDATE usuario SET estado = 'Inactivo' WHERE idUsuario = :id";
             $stmt = $this->conn->prepare($sql);

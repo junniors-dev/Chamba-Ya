@@ -46,7 +46,10 @@
                     <input type="password" placeholder="Contraseña" required name="passwordInput">
                     <i class='bx bxs-lock-alt' ></i>
                 </div>
-                <div class="link_olvido">
+                <div class="fila_recordarme">
+                    <label class="check_recordarme">
+                        <input type="checkbox" name="recordarme" value="1"> Recordarme
+                    </label>
                     <a href="<?= BASE_URL ?>controllers/AuthController.php?action=showRecuperar" class="btn_forgot_pass">¿Olvidó su contraseña?</a>
                 </div>
                 <button type="submit" class="btn_link" name="login">Iniciar Sesión</button>
