@@ -48,6 +48,71 @@
                 </div>
             <?php endif; ?>
 
+            <!-- Card: Resumen / Mini-dashboard -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <div class="card-icon personal"><i class="fa-solid fa-chart-simple"></i></div>
+                    <div>
+                        <h2>Resumen de tu actividad</h2>
+                        <span>Un vistazo rápido a tu perfil en Chamba Ya</span>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-tile">
+                        <div class="stat-icon"><i class="fa-regular fa-eye"></i></div>
+                        <div class="stat-num"><?= (int) ($estadisticas['vistas'] ?? 0) ?></div>
+                        <div class="stat-label">Vistas a tus anuncios</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="stat-icon"><i class="fa-solid fa-inbox"></i></div>
+                        <div class="stat-num"><?= (int) ($estadisticas['postulaciones'] ?? 0) ?></div>
+                        <div class="stat-label">Postulaciones recibidas</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+                        <div class="stat-num">
+                            <?php $cal = (float) ($estadisticas['calificacion'] ?? 0); echo $cal > 0 ? number_format($cal, 1) : '—'; ?>
+                        </div>
+                        <div class="stat-label">Calificación promedio</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="stat-icon"><i class="fa-regular fa-square-plus"></i></div>
+                        <div class="stat-num"><?= (int) ($estadisticas['anuncios'] ?? 0) ?></div>
+                        <div class="stat-label">Anuncios publicados</div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .stats-grid{
+                    display:grid;
+                    grid-template-columns:repeat(4,1fr);
+                    gap:16px;
+                }
+                .stat-tile{
+                    background:linear-gradient(135deg,#f8fafc,#eff6ff);
+                    border:1px solid #e2e8f0;
+                    border-radius:14px;
+                    padding:20px 16px;
+                    text-align:center;
+                    transition:transform .2s ease, box-shadow .2s ease;
+                }
+                .stat-tile:hover{
+                    transform:translateY(-3px);
+                    box-shadow:0 8px 20px rgba(37,99,235,.12);
+                }
+                .stat-icon{
+                    width:44px;height:44px;margin:0 auto 10px;
+                    display:flex;align-items:center;justify-content:center;
+                    border-radius:12px;
+                    background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+                    color:#fff;font-size:18px;
+                }
+                .stat-num{ font-size:30px;font-weight:800;color:#0f2847;line-height:1; }
+                .stat-label{ font-size:13px;color:#64748b;margin-top:6px;font-weight:500; }
+                @media (max-width:700px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
+            </style>
+
             <form action="<?= BASE_URL ?>controllers/AuthController.php?action=updateMisDatos" method="POST" enctype="multipart/form-data" id="profileForm">
 
                 <!-- Card: Datos Personales -->
