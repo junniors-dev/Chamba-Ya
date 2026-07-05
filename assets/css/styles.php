@@ -306,8 +306,8 @@
         border-color: var(--cy-green);
     }
     .categories_card img{
-        width: 92px;
-        height: 92px;
+        width: 150px;
+        height: 100px;
         margin-top: 12px;
         object-fit: contain;
         margin-bottom: 6px;
