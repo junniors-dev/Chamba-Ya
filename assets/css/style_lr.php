@@ -223,6 +223,9 @@ form{
     position: absolute;
     width: 100%;
     height: 100%;
+    /* El contenedor y su forma azul decorativa (::before) no deben
+       interceptar clics del formulario; solo los paneles con botones. */
+    pointer-events: none;
 }
 
 .toggle_box::before{
@@ -253,6 +256,8 @@ form{
     align-items: center;
     z-index: 2;
     transition: .6s ease-in-out;
+    /* Reactiva los clics en los paneles (botones Registrarse / Inicia Sesión). */
+    pointer-events: auto;
 }
 
 .toggle_panel.toggle_left{
