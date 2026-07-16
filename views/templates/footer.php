@@ -18,9 +18,8 @@
                 <div class="footer_social">
                     <span class="social_label">Síguenos</span>
                     <div class="social_links">
-                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                        <a href="https://www.instagram.com/chambaa_ya?igsh=MWlwNnl1eGF2bnpuMQ%3D%3D&utm_source=qr" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@chambaa_ya?_r=1&_t=ZS-985ApXPw1hv" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
                     </div>
                 </div>
             </div>
