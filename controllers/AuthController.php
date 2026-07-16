@@ -56,8 +56,19 @@
             require_once __DIR__ . '/../views/auth/form_datos_user.php';
         }
 
+        // Bloqueo temporal por intentos fallidos.
+        const MAX_INTENTOS_LOGIN = 3;   // intentos permitidos antes del bloqueo
+        const BLOQUEO_SEGUNDOS   = 60;  // duración del bloqueo temporal
+
         public function login(){
             iniciarSesion();
+
+            // Si hay un bloqueo temporal activo, no se procesa el login.
+            if(isset($_SESSION['login_bloqueo_hasta']) && time() < $_SESSION['login_bloqueo_hasta']){
+                $restante = $_SESSION['login_bloqueo_hasta'] - time();
+                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=bloqueado&espera=' . $restante);
+                exit();
+            }
 
             $correo = $_POST['emailInput'] ?? '';
             $password = $_POST['passwordInput'] ?? '';
@@ -65,12 +76,15 @@
 
             $usuario = $this->userModel->getUserByEmail($correo);
 
+            // Correo no registrado: cuenta como intento fallido.
             if(!$usuario){
-                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=not_found');
-                exit();
+                $this->registrarIntentoFallido('not_found');
             }
 
             if(password_verify($password, $usuario['password'])){
+                // Login correcto: se reinicia el contador de intentos.
+                unset($_SESSION['login_intentos'], $_SESSION['login_bloqueo_hasta']);
+
                 // Si la cuenta estaba desactivada, se reactiva al entrar.
                 if(($usuario['estado'] ?? '') === 'Inactivo'){
                     $this->userModel->reactivarUsuario($usuario['idUsuario']);
@@ -88,9 +102,25 @@
                 header('Location: ' . BASE_URL . 'index.php');
                 exit();
             } else {
-                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=wrong_password');
+                // Contraseña incorrecta: cuenta como intento fallido.
+                $this->registrarIntentoFallido('wrong_password');
+            }
+        }
+
+        // Suma un intento fallido y, al llegar al máximo, activa el bloqueo temporal.
+        // Siempre termina redirigiendo (no retorna).
+        private function registrarIntentoFallido(string $motivo): void {
+            $_SESSION['login_intentos'] = ($_SESSION['login_intentos'] ?? 0) + 1;
+
+            if($_SESSION['login_intentos'] >= self::MAX_INTENTOS_LOGIN){
+                $_SESSION['login_bloqueo_hasta'] = time() + self::BLOQUEO_SEGUNDOS;
+                $_SESSION['login_intentos'] = 0; // se reinicia para dar 3 intentos nuevos tras el bloqueo
+                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=bloqueado&espera=' . self::BLOQUEO_SEGUNDOS);
                 exit();
             }
+
+            header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=' . $motivo);
+            exit();
         }
 
         // Genera un token aleatorio: el hash va a la BD, el token plano a la cookie.

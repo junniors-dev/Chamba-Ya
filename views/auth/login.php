@@ -32,7 +32,11 @@
                     ];
                     $ls = $_GET['login_status'];
                 ?>
-                    <?php if(isset($infoMsgs[$ls])): ?>
+                    <?php if($ls === 'bloqueado'): $espera = max(1, (int)($_GET['espera'] ?? 60)); ?>
+                        <p class="form_msg form_msg_error" id="bloqueoMsg" data-espera="<?= $espera ?>">
+                            Demasiados intentos fallidos. Espera <span id="bloqueoSeg"><?= $espera ?></span> s para volver a intentar.
+                        </p>
+                    <?php elseif(isset($infoMsgs[$ls])): ?>
                         <p class="form_msg" style="color:#16a34a;"><?= htmlspecialchars($infoMsgs[$ls]) ?></p>
                     <?php else: ?>
                         <p class="form_msg form_msg_error"><?= htmlspecialchars($errMsgs[$ls] ?? 'Ocurrió un error al iniciar sesión.') ?></p>
@@ -118,6 +122,41 @@
             </div>
         </div>
     </div>
+
+    <!-- Cuenta regresiva del bloqueo temporal por intentos fallidos -->
+    <script>
+        (function () {
+            const aviso = document.getElementById('bloqueoMsg');
+            if (!aviso) return;
+
+            let restante = parseInt(aviso.dataset.espera, 10) || 60;
+            const spanSeg = document.getElementById('bloqueoSeg');
+            const btn = document.querySelector('#loginForm button[name="login"]');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            }
+
+            const temporizador = setInterval(function () {
+                restante--;
+                if (spanSeg) spanSeg.textContent = restante;
+
+                if (restante <= 0) {
+                    clearInterval(temporizador);
+                    aviso.textContent = 'Ya puedes volver a intentar iniciar sesión.';
+                    aviso.classList.remove('form_msg_error');
+                    aviso.style.color = '#16a34a';
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.opacity = '';
+                        btn.style.cursor = '';
+                    }
+                }
+            }, 1000);
+        })();
+    </script>
 </body>
 
 </html>
