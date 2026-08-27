@@ -262,25 +262,24 @@ Esto es un proyecto de portafolio y corre en XAMPP. Antes de exponerlo a interne
 
 ## 👥 Autoría
 
-Chamba Ya es un **proyecto en equipo**. La plataforma (anuncios, postulaciones,
-búsqueda, favoritos, notificaciones, panel de administración y toda la interfaz)
-se construyó entre tres personas:
+**Mantenedor y desarrollador actual: [Junni Díaz — junniors-dev](https://github.com/junniors-dev).**
 
-| | |
-|---|---|
-| [**junniors-dev**](https://github.com/junniors-dev) | Junni Díaz |
-| [**enzoliba**](https://github.com/enzoliba) | Enzo Linares Barboza |
-| **EstefanyAt** | Estefany Terrones |
+Chamba Ya arrancó en junio de 2026 como proyecto de equipo. Desde julio de 2026 el
+resto del equipo dejó de participar y el proyecto lo llevo yo en solitario: soy el
+único que lo mantiene, lo corrige y lo sigue desarrollando.
 
-El reparto real del trabajo está en el historial del repositorio
-(`git shortlog -sn`), que es la fuente fiable.
+Es mío, íntegramente y sin ayuda de nadie, todo lo descrito en la sección de
+**Seguridad** y en las funcionalidades marcadas como añadidas después:
 
-La **auditoría de seguridad y las funcionalidades documentadas más arriba**
-(protección CSRF, endurecimiento de sesiones, recuperación por token, bloqueo
-persistente de intentos, modo activo, portafolio y ciclo de trabajo completo)
-corresponden a una fase posterior realizada por
-[junniors-dev](https://github.com/junniors-dev), y son identificables en los
-commits de la rama `seguridad`.
+- La auditoría completa de autenticación y sesiones, y las 14 vulnerabilidades corregidas
+- Protección CSRF, endurecimiento de sesiones y recuperación de contraseña por token
+- Bloqueo de intentos persistente, validación en servidor y saneamiento del repositorio
+- Modo activo, portafolio de trabajos y el ciclo de trabajo con estado *Completado*
+- Reseñas verificables, ligadas a un trabajo realmente completado
+
+De la etapa inicial en equipo (junio – julio de 2026) también participaron
+[enzoliba](https://github.com/enzoliba) y EstefanyAt. El reparto exacto de aquella
+fase está en el historial (`git shortlog -sn`).
 
 ---
 
