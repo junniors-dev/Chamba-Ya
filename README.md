@@ -21,11 +21,11 @@ Marketplace de empleo y servicios que conecta a **trabajadores** con **quien los
 
 ---
 
-> **Nota sobre este repositorio**
-> Además de la plataforma, este proyecto documenta una **auditoría de seguridad completa**:
-> 14 vulnerabilidades encontradas y corregidas, entre ellas una que permitía **tomar el
-> control de cualquier cuenta**. Está todo en [Seguridad](#-seguridad), con el detalle de
-> cómo se verificó cada arreglo.
+> **Sobre este repositorio**
+> Junto a la plataforma, el proyecto incluye una **auditoría de seguridad** del flujo de
+> autenticación y la gestión de sesiones: 14 hallazgos clasificados según CWE y OWASP
+> Top 10, corregidos y verificados. El más grave permitía tomar el control de cualquier
+> cuenta. El informe completo está en [Seguridad](#-seguridad).
 
 ---
 
@@ -254,104 +254,126 @@ mysql -u root bd_chamba_ya < database/migracion_funcionalidades.sql
 
 ## 🔐 Seguridad
 
-El proyecto pasó por una auditoría de autenticación y manejo de sesiones. Esta sección
-documenta **qué estaba mal y cómo se corrigió**, porque las decisiones importan tanto
-como el resultado.
+### Alcance y metodología
 
-### El fallo más grave
+Auditoría de caja blanca sobre el flujo de autenticación, la gestión de sesiones y el
+control de acceso. Se revisaron los 13 modelos, los 14 controladores y las 38 vistas del
+proyecto.
 
-Recuperar la contraseña solo pedía **correo + teléfono**:
+Cada hallazgo se confirmó **ejecutando la aplicación** contra la base de datos real
+—no únicamente por inspección estática— y cada corrección se validó con la prueba
+correspondiente antes de darla por cerrada. El conjunto de cambios está en
+[PR #1](https://github.com/junniors-dev/Chamba-Ya/pull/1).
+
+### Resumen
+
+| Severidad | Hallazgos | Estado |
+|:---|:---:|:---|
+| Crítica | 3 | Corregidos |
+| Alta | 3 | Corregidos |
+| Media | 8 | Corregidos |
+| **Total** | **14** | **Corregidos** |
+
+La clasificación sigue [CWE](https://cwe.mitre.org/) y las categorías de
+[OWASP Top 10 (2021)](https://owasp.org/Top10/es/).
+
+### Hallazgos
+
+| ID | Severidad | Hallazgo | Clasificación | Corrección aplicada |
+|:---|:---|:---|:---|:---|
+| CY-01 | Crítica | Restablecimiento de contraseña basado en datos de acceso público | CWE-640 · A07 | Token de un solo uso, almacenado como hash SHA-256, con caducidad de 30 minutos |
+| CY-02 | Crítica | Ausencia total de protección CSRF, incluida la elevación de privilegios a administrador | CWE-352 · A01 | Token por sesión validado con `hash_equals()` en formularios, controladores y peticiones AJAX |
+| CY-03 | Crítica | Fijación de sesión: el identificador no se renovaba tras la autenticación | CWE-384 · A07 | `session_regenerate_id(true)` en inicio de sesión, registro y cambio de contraseña |
+| CY-04 | Alta | Cookie de sesión sin atributos de seguridad, accesible desde JavaScript | CWE-1004 · CWE-614 · A05 | `httponly`, `samesite`, `secure` bajo HTTPS, `use_strict_mode` y caducidad por inactividad |
+| CY-05 | Alta | Limitación de intentos de acceso almacenada en el lado del cliente | CWE-307 · CWE-602 · A07 | Registro en la tabla `intento_login`, contabilizado por correo e IP |
+| CY-06 | Alta | Enumeración de usuarios por discrepancia en las respuestas | CWE-204 · A07 | Respuesta uniforme y verificación contra un hash señuelo para igualar el tiempo de respuesta |
+| CY-07 | Media | Token de sesión persistente sin rotación ni revocación al cambiar la contraseña | CWE-613 · A07 | Rotación en cada uso e invalidación en la misma consulta que actualiza la contraseña |
+| CY-08 | Media | La desactivación de cuenta se revertía automáticamente al iniciar sesión | CWE-285 · A01 | Distinción entre baja voluntaria (`Inactivo`) y sanción administrativa (`Suspendido`/`Bloqueado`) |
+| CY-09 | Media | Eliminación de cuenta sin reautenticación | CWE-306 · A07 | Se exige la contraseña actual para completar la operación |
+| CY-10 | Media | Calificaciones emitibles sin relación verificable entre las partes | CWE-862 · A01 | Se requiere una postulación en estado `Completado`; la reseña queda vinculada a ella |
+| CY-11 | Media | Validación de entrada ausente en el servidor | CWE-20 · A03 | `core/security/validacion.php`, aplicado en registro, edición de perfil y recuperación |
+| CY-12 | Media | Redirección abierta en el cambio de modo de usuario | CWE-601 · A01 | Se aceptan exclusivamente rutas internas; el resto se redirige al inicio |
+| CY-13 | Media | Credenciales embebidas en el código y divulgación de errores al cliente | CWE-798 · CWE-209 · A05 | Configuración en `env.php`, excluido del control de versiones; los errores solo al registro del servidor |
+| CY-14 | Media | Datos personales expuestos en el repositorio público (11 direcciones de correo y sus hashes) | CWE-538 · A01 | Sustitución por `schema.sql` y `seed.sql` con datos sintéticos, e incorporación de `.gitignore` |
+
+### CY-01 — Restablecimiento de contraseña basado en datos de acceso público
+
+**Descripción.** El procedimiento de recuperación autenticaba al solicitante mediante la
+combinación de correo electrónico y número de teléfono:
 
 ```php
-// Antes — cualquiera podía tomar cualquier cuenta
+// Implementación vulnerable
 $usuario = $this->userModel->getUserByEmail($correo);
 if (!$usuario || trim($usuario['telefono']) !== $telefono) { /* error */ }
 $this->userModel->updatePassword($usuario['idUsuario'], $newPassword);
 ```
 
-El problema no era el código, sino la premisa: **el teléfono se publica en los anuncios**.
-La plataforma tiene un botón de WhatsApp que lo muestra. Los dos "secretos" que protegían
-la cuenta estaban a la vista en la misma web, y no había límite de intentos.
+**Impacto.** El defecto no reside en la implementación sino en la premisa: **el número de
+teléfono se publica en los propios anuncios** de la plataforma, que incorpora un enlace de
+contacto por WhatsApp construido a partir de ese dato. Ambos factores de verificación eran
+públicos y estaban disponibles en la misma aplicación, sin límite de intentos. Cualquier
+visitante podía tomar el control de cualquier cuenta, incluidas las de administración.
 
-Ahora es un enlace con **token de un solo uso**, guardado hasheado (SHA-256), que caduca
-en 30 minutos y se invalida al usarse.
+**Corrección.** Se sustituyó por un enlace de un solo uso con token aleatorio de 256 bits,
+almacenado como hash SHA-256, con caducidad de 30 minutos e invalidación tras el primer
+uso. La respuesta del formulario es uniforme exista o no la cuenta, para no reintroducir
+por esta vía la enumeración de usuarios corregida en CY-06.
 
-### Lo que ya estaba bien
+### Controles verificados como correctos
 
-- **Contraseñas hasheadas** con `password_hash()` (bcrypt) y `password_verify()`. Nunca hubo texto plano.
-- **Sin inyección SQL**: los 13 modelos usan PDO preparado. Incluso los `WHERE` dinámicos del panel construyen *placeholders*, nunca concatenan valores.
-- **Salida escapada** con `htmlspecialchars()` y listas blancas para los mensajes que llegan por URL.
-- **Comprobaciones de propiedad** antes de editar o borrar avisos y postulaciones.
-- **Subida de archivos validada** por extensión, tamaño y **tipo MIME real** (`finfo`), que es lo que impide colar un `.php` renombrado a `.jpg`.
+Los siguientes mecanismos ya estaban correctamente implementados y no requirieron cambios:
 
-### Las 14 vulnerabilidades corregidas
+- **Almacenamiento de contraseñas** mediante `password_hash()` (bcrypt) y `password_verify()`. No se detectó almacenamiento en claro en ningún punto.
+- **Prevención de inyección SQL**: los 13 modelos emplean PDO con sentencias preparadas. Las cláusulas `WHERE` dinámicas del panel de administración generan marcadores de posición en lugar de concatenar valores.
+- **Codificación de salida** con `htmlspecialchars()`, complementada con listas de permitidos para los mensajes procedentes de la URL.
+- **Control de propiedad de recursos** previo a la edición y eliminación de anuncios y postulaciones.
+- **Validación de archivos subidos** por extensión, tamaño y **tipo MIME real** (`finfo`), lo que impide la carga de un archivo PHP con extensión de imagen.
 
-| Sev | Problema | Corrección |
-|:---:|---|---|
-| 🔴 | **Toma de cuenta** por el flujo de recuperación descrito arriba | Token de un solo uso, hasheado, con caducidad |
-| 🔴 | **Sin protección CSRF** en ningún formulario, incluido *hacer administrador* | Token por sesión con `hash_equals()`, en formularios, controladores y AJAX |
-| 🔴 | **Session fixation**: el identificador de sesión no cambiaba al entrar | `session_regenerate_id(true)` en login, registro y cambio de contraseña |
-| 🟠 | **Cookie de sesión sin flags**, legible por JavaScript | `httponly`, `samesite`, `secure` bajo HTTPS, `use_strict_mode` y caducidad |
-| 🟠 | **Bloqueo de intentos evadible**: el contador vivía en `$_SESSION`, del lado del atacante | Tabla `intento_login`, contando por correo **e** IP |
-| 🟠 | **Enumeración de usuarios**: la respuesta delataba qué correos existían | Respuesta idéntica, y comparación contra un hash ficticio para igualar también el tiempo |
-| 🟡 | **`remember_token` sin rotar**, sobrevivía al cambio de contraseña | Rota en cada uso y se invalida al cambiarla, en la misma consulta |
-| 🟡 | **Desactivar la cuenta no servía**: se reactivaba sola al entrar | Se separa la baja voluntaria de la sanción del administrador |
-| 🟡 | **Borrar la cuenta con un solo clic** | Exige confirmar la contraseña actual |
-| 🟡 | **Reseñas inventadas**: cualquiera podía calificar a cualquiera | Exige una postulación **Completada** entre ambos, y se guarda cuál |
-| 🟡 | **Sin validación en servidor** de correo, teléfono ni longitudes | `core/security/validacion.php`, aplicado en registro, edición y recuperación |
-| 🟡 | **Open redirect** en el cambio de modo | Solo se aceptan rutas internas |
-| 🟡 | **Credenciales en el código** y error de conexión impreso al visitante | `env.php` fuera del repositorio; los errores solo al log |
-| 🟡 | **Volcado SQL con 11 correos y hashes reales** en un repositorio público, sin `.gitignore` | Sustituido por `schema.sql` + `seed.sql` ficticios, y `.gitignore` añadido |
+### Defectos detectados durante la verificación
 
-### Cuatro errores que solo aparecieron al ejecutar
+La ejecución de las pruebas reveló cuatro defectos preexistentes que la inspección estática
+no evidenciaba:
 
-Leyendo el código no se veían. Salieron al levantar el proyecto y probarlo de verdad:
+| Defecto | Causa |
+|:---|:---|
+| El buscador dejaba de funcionar con sentencias preparadas nativas | Reutilización del mismo marcador `:search` dos veces en una sola consulta, que MySQL rechaza cuando `EMULATE_PREPARES` está desactivado |
+| Los plazos de caducidad se calculaban mal por un margen de 7 horas | PHP registraba la fecha de expiración y MySQL la comparaba con su propio `NOW()`, con zonas horarias distintas. Un enlace de 30 minutos permanecía válido 7 h 30 min |
+| Error fatal en la página principal | Dependencia circular entre `config.php` y `session.php` |
+| Vistas de autenticación con carga inestable | Rutas relativas `../` resueltas contra el directorio de trabajo en lugar del archivo |
 
-- **El buscador estaba roto.** Repetía el mismo *placeholder* `:search` dos veces en una
-  consulta, algo que MySQL rechaza cuando las consultas preparadas son reales.
-- **PHP y MySQL iban con 7 horas de diferencia.** PHP escribía la fecha de caducidad y
-  MySQL la comparaba con su propio `NOW()`, así que un enlace de 30 minutos duraba
-  7 horas y media. Ahora los plazos los calcula la base de datos.
-- **Dependencia circular** entre `config.php` y `session.php` que tumbaba la portada.
-- **Rutas relativas `../`** en las vistas de autenticación, que dependían del directorio
-  de trabajo y no del archivo.
+### Verificación
 
-### Cómo se verificó
-
-Que compile no prueba nada. Cada arreglo se comprobó ejecutándolo contra la base real:
-
-```
-POST sin token CSRF                          →  419 rechazado
-Contraseña incorrecta vs correo inexistente  →  respuesta idéntica
-PHPSESSID antes y después del login          →  cambia
-5 fallos borrando la cookie cada vez         →  bloquea igual
-Enlace de recuperación reutilizado           →  rechazado
-Contraseña antigua tras el reset             →  rechazada
-Calificar sin trabajo completado             →  rechazado
-Completar sin haber aceptado antes           →  rechazado
-Completar o borrar algo ajeno                →  rechazado
-PHP renombrado a .png                        →  rechazado por MIME real
-Redirección a un dominio externo             →  forzada al inicio
-50 métodos de modelo contra la base real     →  50 / 50
-22 páginas públicas, de usuario y de admin   →  render completo, 0 errores PHP
-93 archivos PHP                              →  compilan
-schema.sql + seed.sql en base virgen         →  arranca
-```
+| Prueba | Resultado |
+|:---|:---|
+| Petición POST sin token CSRF | Rechazada (HTTP 419) |
+| Contraseña incorrecta frente a correo inexistente | Respuesta idéntica |
+| Identificador de sesión antes y después de autenticarse | Se renueva |
+| Cinco intentos fallidos eliminando la cookie en cada uno | Bloqueo aplicado |
+| Reutilización de un enlace de recuperación | Rechazada |
+| Autenticación con la contraseña anterior al restablecimiento | Rechazada |
+| Calificación sin trabajo completado entre las partes | Rechazada |
+| Cierre de un trabajo sin aceptación previa | Rechazado |
+| Cierre o eliminación de recursos de otro usuario | Rechazado |
+| Carga de un archivo PHP con extensión `.png` | Rechazada por verificación MIME |
+| Redirección hacia un dominio externo | Forzada al inicio de la aplicación |
+| Métodos de modelo ejecutados contra la base de datos | 50 / 50 correctos |
+| Páginas públicas, de usuario y de administración | 22 / 22 con render completo y sin errores |
+| Archivos PHP del repositorio | 93 / 93 sin errores de sintaxis |
+| Instalación desde `schema.sql` y `seed.sql` en base vacía | Correcta |
 
 <details>
-<summary><b>Lo que falta para llevarlo a producción</b></summary>
+<summary><b>Limitaciones y recomendaciones para un despliegue en producción</b></summary>
 
 <br/>
 
-Esto es un proyecto de portafolio y corre en XAMPP. Antes de exponerlo a internet:
+El proyecto está concebido para un entorno de desarrollo local (XAMPP). Antes de exponerlo
+públicamente conviene atender los siguientes puntos, fuera del alcance de esta auditoría:
 
-- Servir todo por **HTTPS** (la cookie `secure` ya se activa sola al detectarlo).
-- Configurar un **SMTP real**. XAMPP no envía correos, y por eso en modo desarrollo el
-  enlace de recuperación se muestra en pantalla. Con `modo_dev = false` eso no ocurre.
-- Mover `assets/uploads/` fuera de la raíz web, o negar la ejecución de PHP en esa carpeta
-  con una regla de Apache.
-- Añadir cabeceras `Content-Security-Policy` y `X-Frame-Options`.
-- Crear un usuario de MySQL con permisos mínimos, en lugar de `root`.
+- Servir la aplicación exclusivamente sobre **HTTPS**. El atributo `secure` de la cookie se activa automáticamente al detectarlo.
+- Configurar un **servidor SMTP**. XAMPP no entrega correo, motivo por el cual el enlace de recuperación se muestra en pantalla cuando `modo_dev` está activo. Con `modo_dev = false` ese comportamiento queda deshabilitado.
+- Reubicar `assets/uploads/` fuera de la raíz web, o denegar la ejecución de PHP en ese directorio mediante configuración de Apache.
+- Incorporar las cabeceras `Content-Security-Policy` y `X-Frame-Options`.
+- Emplear un usuario de base de datos con privilegios mínimos en lugar de `root`.
 
 </details>
 
@@ -361,25 +383,25 @@ Esto es un proyecto de portafolio y corre en XAMPP. Antes de exponerlo a interne
 
 **Mantenedor y desarrollador: [Junni Díaz — junniors-dev](https://github.com/junniors-dev)**
 
-Chamba Ya arrancó en junio de 2026 como proyecto de equipo. Desde julio de 2026 el resto
-del equipo dejó de participar y el proyecto lo llevo yo en solitario: soy el único que lo
-mantiene, lo corrige y lo sigue desarrollando.
+Chamba Ya se inició en junio de 2026 como proyecto de equipo. Desde julio de 2026 su
+desarrollo y mantenimiento corresponden a un único responsable.
 
-Es mío, íntegramente, todo lo descrito en la sección de **Seguridad** y las
-funcionalidades añadidas después:
+Son de autoría propia la auditoría de seguridad descrita en este documento y las
+funcionalidades incorporadas con posterioridad:
 
-- La auditoría completa de autenticación y sesiones, y las 14 vulnerabilidades corregidas
-- Protección CSRF, endurecimiento de sesiones y recuperación de contraseña por token
-- Bloqueo de intentos persistente, validación en servidor y saneamiento del repositorio
-- Modo activo, portafolio de trabajos y ciclo de trabajo con estado *Completado*
-- Reseñas verificables, ligadas a un trabajo realmente completado
+- Auditoría de autenticación y gestión de sesiones, con la corrección de los 14 hallazgos
+- Protección CSRF, endurecimiento de sesiones y restablecimiento de contraseña por token
+- Control de intentos de acceso persistente, validación en servidor y saneamiento del repositorio
+- Modo activo de usuario, portafolio de trabajos y ciclo de trabajo con estado `Completado`
+- Sistema de reseñas verificables, vinculadas a un trabajo efectivamente completado
 
-El detalle de la etapa inicial está en el historial del repositorio.
+El historial del repositorio documenta la etapa inicial.
 
 ---
 
 <div align="center">
 
-Hecho con 💚💛 para que encontrar chamba sea **al toque**.
+**Chamba Ya** · Marketplace de empleo y servicios
+[Repositorio](https://github.com/junniors-dev/Chamba-Ya) · [Auditoría de seguridad](https://github.com/junniors-dev/Chamba-Ya/pull/1)
 
 </div>
