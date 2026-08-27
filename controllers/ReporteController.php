@@ -2,6 +2,9 @@
 require_once __DIR__ . '/../models/ReporteModel.php';
 require_once __DIR__ . '/../models/PostulacionModel.php';
 require_once __DIR__ . '/../core/config/session.php';
+// Necesario para verificarCsrf(): session.php ya no arrastra config.php,
+// para no formar un ciclo entre ambos archivos.
+require_once __DIR__ . '/../core/security/csrf.php';
 
 class ReporteController {
     private ReporteModel $modelo;

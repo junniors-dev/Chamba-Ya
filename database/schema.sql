@@ -27,7 +27,7 @@ CREATE TABLE `anuncio` (
   PRIMARY KEY (`idAnuncio`),
   KEY `idUsuario` (`idUsuario`),
   CONSTRAINT `anuncio_ibfk_1` FOREIGN KEY (`idUsuario`) REFERENCES `usuario` (`idUsuario`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -52,12 +52,15 @@ CREATE TABLE `calificacion` (
   `fecha` datetime DEFAULT current_timestamp(),
   `idUsuarioCalificado` int(10) unsigned NOT NULL,
   `idUsuarioCalificador` int(10) unsigned NOT NULL,
+  `idPostulacion` int(10) unsigned DEFAULT NULL,
   PRIMARY KEY (`idCalificacion`),
   KEY `idUsuarioCalificado` (`idUsuarioCalificado`),
   KEY `idUsuarioCalificador` (`idUsuarioCalificador`),
+  KEY `idx_calificacion_postulacion` (`idPostulacion`),
   CONSTRAINT `calificacion_ibfk_1` FOREIGN KEY (`idUsuarioCalificado`) REFERENCES `usuario` (`idUsuario`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `calificacion_ibfk_2` FOREIGN KEY (`idUsuarioCalificador`) REFERENCES `usuario` (`idUsuario`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `calificacion_ibfk_2` FOREIGN KEY (`idUsuarioCalificador`) REFERENCES `usuario` (`idUsuario`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_calificacion_postulacion` FOREIGN KEY (`idPostulacion`) REFERENCES `postulacion` (`idPostulacion`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -120,7 +123,7 @@ CREATE TABLE `intento_login` (
   PRIMARY KEY (`idIntento`),
   KEY `idx_correo_fecha` (`correo`,`fecha`),
   KEY `idx_ip_fecha` (`ip`,`fecha`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -133,7 +136,7 @@ CREATE TABLE `notificacion` (
   `fecha` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`idNotificacion`),
   KEY `idx_usuario_leida` (`idUsuario`,`leida`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -152,10 +155,28 @@ CREATE TABLE `password_reset` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `portafolio` (
+  `idPortafolio` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `idUsuario` int(10) unsigned NOT NULL,
+  `titulo` varchar(120) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `imagen` varchar(255) DEFAULT NULL,
+  `idCategoria` int(10) unsigned DEFAULT NULL,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`idPortafolio`),
+  KEY `idx_portafolio_usuario` (`idUsuario`),
+  KEY `fk_portafolio_categoria` (`idCategoria`),
+  CONSTRAINT `fk_portafolio_categoria` FOREIGN KEY (`idCategoria`) REFERENCES `categoria` (`idCategoria`) ON DELETE SET NULL,
+  CONSTRAINT `fk_portafolio_usuario` FOREIGN KEY (`idUsuario`) REFERENCES `usuario` (`idUsuario`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `postulacion` (
   `idPostulacion` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `estado` enum('Pendiente','Aceptado','Rechazado') DEFAULT 'Pendiente',
+  `estado` enum('Pendiente','Aceptado','Rechazado','Completado') NOT NULL DEFAULT 'Pendiente',
   `fecha` datetime DEFAULT current_timestamp(),
+  `fechaCompletado` datetime DEFAULT NULL,
   `idAnuncio` int(10) unsigned NOT NULL,
   `idUsuario` int(10) unsigned NOT NULL,
   PRIMARY KEY (`idPostulacion`),
@@ -163,7 +184,7 @@ CREATE TABLE `postulacion` (
   KEY `idUsuario` (`idUsuario`),
   CONSTRAINT `postulacion_ibfk_1` FOREIGN KEY (`idAnuncio`) REFERENCES `anuncio` (`idAnuncio`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `postulacion_ibfk_2` FOREIGN KEY (`idUsuario`) REFERENCES `usuario` (`idUsuario`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -222,6 +243,7 @@ CREATE TABLE `usuario` (
   `fechaRegistro` datetime DEFAULT current_timestamp(),
   `estado` enum('Activo','Inactivo','Suspendido','Bloqueado') DEFAULT 'Activo',
   `rol` enum('usuario','admin') NOT NULL DEFAULT 'usuario',
+  `modo` enum('trabajador','cliente') NOT NULL DEFAULT 'trabajador',
   `idDistrito` int(10) unsigned DEFAULT NULL,
   `notif_ofertas` tinyint(1) NOT NULL DEFAULT 1,
   `notif_vistas` tinyint(1) NOT NULL DEFAULT 1,
@@ -233,7 +255,7 @@ CREATE TABLE `usuario` (
   UNIQUE KEY `correo` (`correo`),
   KEY `idDistrito` (`idDistrito`),
   CONSTRAINT `fk_usuario_distrito` FOREIGN KEY (`idDistrito`) REFERENCES `distrito` (`idDistrito`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;

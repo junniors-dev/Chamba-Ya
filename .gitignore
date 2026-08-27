@@ -4,6 +4,8 @@ core/config/env.php
 # Fotos subidas por los usuarios (no son parte del código)
 assets/uploads/img_perfiles/*
 !assets/uploads/img_perfiles/default.png
+assets/uploads/portafolio/*
+!assets/uploads/portafolio/.gitkeep
 
 # Volcados de base de datos con datos reales
 *.sql

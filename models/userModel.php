@@ -173,6 +173,36 @@
             return $stmt->fetchColumn() > 0;
         }
 
+        /* ====================================================================
+           MODO ACTIVO (trabajador / cliente)
+           No son roles excluyentes: el usuario conserva todas sus capacidades.
+           El modo solo decide qué panel y qué navegación se le muestran, para
+           que la interfaz no le mezcle "buscar chamba" con "buscar trabajador".
+           ==================================================================== */
+        public function cambiarModo($id, string $modo): bool {
+            // Lista blanca: el valor viene de un formulario, así que nunca se
+            // pasa directo a la consulta aunque la columna sea un ENUM.
+            if (!in_array($modo, ['trabajador', 'cliente'], true)) {
+                return false;
+            }
+            $stmt = $this->conn->prepare("UPDATE usuario SET modo = :modo WHERE idUsuario = :id");
+            $stmt->bindValue(':modo', $modo);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }
+
+        public function obtenerModo($id): string {
+            try {
+                $stmt = $this->conn->prepare("SELECT modo FROM usuario WHERE idUsuario = :id");
+                $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+                $stmt->execute();
+                $modo = $stmt->fetchColumn();
+                return in_array($modo, ['trabajador', 'cliente'], true) ? $modo : 'trabajador';
+            } catch (PDOException $e) {
+                return 'trabajador';
+            }
+        }
+
         public function getPreferencias($id){
             $sql = "SELECT notif_ofertas, notif_vistas, notif_boletin, visibilidad FROM usuario WHERE idUsuario = :id";
             $stmt = $this->conn->prepare($sql);

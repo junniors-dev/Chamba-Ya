@@ -34,13 +34,15 @@ class CalificacionModel {
         }
     }
 
-    public function crear($idCalificador, $idCalificado, $puntaje, $comentario): bool {
+    // Se guarda la postulación completada que justifica la calificación: así queda
+    // trazable de qué trabajo salió cada reseña y no se pueden inventar.
+    public function crear($idCalificador, $idCalificado, $puntaje, $comentario, ?int $idPostulacion = null): bool {
         try {
             $stmt = $this->conn->prepare(
-                "INSERT INTO calificacion (idUsuarioCalificador, idUsuarioCalificado, puntaje, comentario)
-                 VALUES (?, ?, ?, ?)"
+                "INSERT INTO calificacion (idUsuarioCalificador, idUsuarioCalificado, puntaje, comentario, idPostulacion)
+                 VALUES (?, ?, ?, ?, ?)"
             );
-            return $stmt->execute([$idCalificador, $idCalificado, $puntaje, $comentario]);
+            return $stmt->execute([$idCalificador, $idCalificado, $puntaje, $comentario, $idPostulacion]);
         } catch (Exception $e) {
             error_log("Error al crear calificacion: " . $e->getMessage());
             return false;

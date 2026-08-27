@@ -836,4 +836,38 @@ input:checked + .slider:before {
         font-size: 26px;
     }
 }
+
+/* ===== Conmutador de modo (trabajador / cliente) ===== */
+.modo-switch .modo-opciones {
+    display: flex;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 10px;
+}
+.modo-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 6px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.modo-btn i { font-size: 15px; }
+.modo-btn:hover { color: #334155; }
+.modo-btn.modo-activo {
+    background: #fff;
+    color: #4f46e5;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .12);
+}
+
 </style>

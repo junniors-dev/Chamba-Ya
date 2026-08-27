@@ -1,6 +1,7 @@
 <?php
     // views/user/perfil_publico.php
     require_once __DIR__ . '/../../assets/css/style_detalleServicio.php';
+    require_once __DIR__ . '/../../assets/css/style_portafolio.php';
     require_once __DIR__ . '/../templates/head.php';
     require_once __DIR__ . '/../templates/header.php';
 ?>
@@ -55,6 +56,35 @@
                         <?php endif; ?>
                     </div>
                 </div>
+
+                <?php if (!empty($portafolio)): ?>
+                    <!-- Trabajos anteriores: solo se muestra si hay alguno, para no
+                         dejar un hueco vacío en los perfiles que aún no lo usan. -->
+                    <div class="seccion-bloque-info">
+                        <h3>Trabajos anteriores</h3>
+                        <div class="portafolio-grid">
+                            <?php foreach ($portafolio as $trabajo): ?>
+                                <div class="portafolio-item">
+                                    <?php if (!empty($trabajo['imagen'])): ?>
+                                        <img src="<?= BASE_URL ?>assets/uploads/portafolio/<?= htmlspecialchars($trabajo['imagen']) ?>"
+                                             alt="<?= htmlspecialchars($trabajo['titulo']) ?>" loading="lazy">
+                                    <?php else: ?>
+                                        <div class="portafolio-sinimg"><i class="fa-regular fa-image"></i></div>
+                                    <?php endif; ?>
+                                    <div class="portafolio-cuerpo">
+                                        <h4><?= htmlspecialchars($trabajo['titulo']) ?></h4>
+                                        <?php if (!empty($trabajo['descripcion'])): ?>
+                                            <p><?= nl2br(htmlspecialchars($trabajo['descripcion'])) ?></p>
+                                        <?php endif; ?>
+                                        <?php if (!empty($trabajo['categoria'])): ?>
+                                            <span class="portafolio-cat"><?= htmlspecialchars($trabajo['categoria']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </main>
 
             <aside class="col-sidebar-datos">

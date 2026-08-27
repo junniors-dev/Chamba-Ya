@@ -253,6 +253,8 @@
             $_SESSION['idUsuario']    = $usuario['idUsuario'];
             $_SESSION['emailUsuario'] = $usuario['correo'];
             $_SESSION['rol']          = $usuario['rol'] ?? 'usuario';
+            // Modo activo (trabajador / cliente): decide qué panel ve al entrar.
+            $_SESSION['modo']         = $usuario['modo'] ?? 'trabajador';
 
             // "Recordarme": cookie persistente de 30 días.
             if($recordarme){
@@ -308,6 +310,14 @@
             // Resumen para el mini-dashboard del perfil.
             $estadisticas = $this->userModel->obtenerEstadisticasPerfil($_SESSION['idUsuario']);
 
+            // Portafolio de trabajos anteriores y categorías para el formulario.
+            require_once __DIR__ . '/../models/PortafolioModel.php';
+            require_once __DIR__ . '/../models/anuncioModel.php';
+            $portModel      = new PortafolioModel();
+            $portafolio     = $portModel->obtenerDeUsuario($_SESSION['idUsuario']);
+            $portafolioLleno = count($portafolio) >= PortafolioModel::MAX_POR_USUARIO;
+            $categoriasPort = (new AnuncioModel())->obtenerCategorias();
+
             global $base_path;
             require_once __DIR__ . '/../views/user/mis_datos.php';
         }
@@ -341,6 +351,51 @@
             $this->userModel->guardarPreferencias($id, $ofertas, $vistas, $boletin, $visibilidad);
             header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showPreferencias&pref_status=success');
             exit();
+        }
+
+        /**
+         * Cambia el modo activo (trabajador / cliente).
+         *
+         * No es un cambio de rol ni de permisos: el usuario conserva todo lo que
+         * podía hacer. Solo cambia qué panel y qué navegación ve, para que la
+         * interfaz no le mezcle "buscar chamba" con "buscar trabajador".
+         */
+        public function cambiarModo(){
+            requireLogin();
+            if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
+            verificarCsrf();
+
+            $modo = $_POST['modo'] ?? '';
+            if(!in_array($modo, ['trabajador', 'cliente'], true)){
+                $modo = 'trabajador';
+            }
+
+            $this->userModel->cambiarModo($_SESSION['idUsuario'], $modo);
+            $_SESSION['modo'] = $modo;
+
+            // Vuelve a donde estaba, si el destino es del propio sitio.
+            $destino = $_POST['volver_a'] ?? '';
+            header('Location: ' . $this->destinoSeguro($destino));
+            exit();
+        }
+
+        /**
+         * Solo se aceptan rutas internas. Si se redirigiera a lo que llegue por
+         * POST, la página serviría de trampolín hacia sitios externos (open
+         * redirect), que es como se disfrazan los enlaces de phishing.
+         */
+        private function destinoSeguro(string $destino): string {
+            // Se descarta cualquier cosa con esquema o que empiece por "//".
+            if ($destino === '' || preg_match('#^[a-z][a-z0-9+.-]*:#i', $destino) || str_starts_with($destino, '//')) {
+                return BASE_URL . 'index.php';
+            }
+            // Solo se conserva la parte de ruta y consulta.
+            $partes = parse_url($destino);
+            if ($partes === false || isset($partes['host'])) {
+                return BASE_URL . 'index.php';
+            }
+            $ruta = ($partes['path'] ?? '') . (isset($partes['query']) ? '?' . $partes['query'] : '');
+            return $ruta !== '' ? $ruta : BASE_URL . 'index.php';
         }
 
         public function desactivarCuenta(){
@@ -637,6 +692,7 @@
         case 'eliminarCuenta':      $controller->eliminarCuenta();      break;
         case 'updateMisDatos':      $controller->updateMisDatos();      break;
         case 'changePassword':      $controller->changePassword();      break;
+        case 'cambiarModo':         $controller->cambiarModo();         break;
         case 'showRecuperar':       $controller->showRecuperar();       break;
         case 'solicitarReset':      $controller->solicitarReset();      break;
         case 'showResetForm':       $controller->showResetForm();       break;

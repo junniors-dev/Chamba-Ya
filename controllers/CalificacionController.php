@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/../models/CalificacionModel.php';
 require_once __DIR__ . '/../core/config/session.php';
+// Necesario para verificarCsrf(): session.php ya no arrastra config.php,
+// para no formar un ciclo entre ambos archivos.
+require_once __DIR__ . '/../core/security/csrf.php';
+require_once __DIR__ . '/../core/security/validacion.php'; // limpiarTexto()
 
 class CalificacionController {
     private CalificacionModel $modelo;
@@ -26,10 +30,21 @@ class CalificacionController {
             $this->redirigir($idAnuncio, 'cal_propia');
         }
 
+        // Solo se puede calificar a alguien con quien se completó un trabajo.
+        // Antes cualquier usuario podía calificar a cualquier otro sin haber
+        // trabajado nunca con él: eso permitía inflar o hundir reputaciones.
+        require_once __DIR__ . '/../models/PostulacionModel.php';
+        $trabajo = (new PostulacionModel())->trabajoCompletadoEntre($idCalificador, $idCalificado);
+        if ($trabajo === null) {
+            $this->redirigir($idAnuncio, 'cal_sin_trabajo');
+        }
+
+        $comentario = limpiarTexto($comentario, 1000);
+
         if ($this->modelo->yaCalifico($idCalificador, $idCalificado)) {
             $ok = $this->modelo->actualizar($idCalificador, $idCalificado, $puntaje, $comentario);
         } else {
-            $ok = $this->modelo->crear($idCalificador, $idCalificado, $puntaje, $comentario);
+            $ok = $this->modelo->crear($idCalificador, $idCalificado, $puntaje, $comentario, (int) $trabajo['idPostulacion']);
         }
 
         if ($ok) {

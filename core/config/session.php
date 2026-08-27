@@ -139,6 +139,7 @@ function intentarAutoLoginPorCookie(): void {
     $_SESSION['emailUsuario'] = $usuario['correo'];
     // Restaura el rol para que un admin con "recordarme" no pierda el panel.
     $_SESSION['rol']          = $usuario['rol'] ?? 'usuario';
+    $_SESSION['modo']         = $usuario['modo'] ?? 'trabajador';
 
     // Rotación del token: cada uso genera uno nuevo y anula el anterior.
     // Si alguien robó la cookie, deja de servir en cuanto el dueño legítimo entra.
@@ -176,6 +177,21 @@ function requireLogin(): void {
         header('Location: ' . BASE_URL . 'views/auth/login.php');
         exit();
     }
+}
+
+/**
+ * Modo activo del usuario: 'trabajador' (busca chamba) o 'cliente' (busca quien
+ * trabaje). No son roles excluyentes ni cambian permisos; solo deciden qué panel
+ * y qué navegación se muestran. Quien no ha iniciado sesión ve el modo trabajador.
+ */
+function modoActivo(): string {
+    iniciarSesion();
+    $modo = $_SESSION['modo'] ?? 'trabajador';
+    return in_array($modo, ['trabajador', 'cliente'], true) ? $modo : 'trabajador';
+}
+
+function esModoCliente(): bool {
+    return modoActivo() === 'cliente';
 }
 
 // ¿El usuario logueado es administrador?

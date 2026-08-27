@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../models/PostulacionModel.php';
 require_once __DIR__ . '/../core/config/session.php';
+// Necesario para verificarCsrf(): session.php ya no arrastra config.php,
+// para no formar un ciclo entre ambos archivos.
+require_once __DIR__ . '/../core/security/csrf.php';
 class PostulacionController {
     private PostulacionModel $modelo;
 
@@ -64,6 +67,13 @@ class PostulacionController {
         $idPostulacion = (int) ($_POST['idPostulacion'] ?? 0);
         $decision      = $_POST['decision'] ?? '';
 
+        // "completar" cierra el trabajo. Se trata aparte porque no es un simple
+        // cambio de estado: exige que la postulación estuviera Aceptada y es lo
+        // que habilita las calificaciones entre las dos partes.
+        if ($decision === 'completar') {
+            $this->completar($idPostulacion, $idDueno);
+        }
+
         $mapa = ['aceptar' => 'Aceptado', 'rechazar' => 'Rechazado'];
         if (!isset($mapa[$decision]) || $idPostulacion <= 0) {
             $this->redirigirRecibidas('error');
@@ -84,6 +94,33 @@ class PostulacionController {
             }
         }
         $this->redirigirRecibidas($ok ? ($decision === 'aceptar' ? 'aceptada' : 'rechazada') : 'error');
+    }
+
+    /**
+     * Cierra un trabajo aceptado. El modelo solo lo permite si el anuncio es de
+     * quien lo pide y la postulación estaba en 'Aceptado', así que no hace falta
+     * repetir aquí esas comprobaciones: si devuelve false, alguna no se cumplió.
+     */
+    private function completar(int $idPostulacion, int $idDueno): never {
+        if ($idPostulacion <= 0) {
+            $this->redirigirRecibidas('error');
+        }
+
+        $ok = $this->modelo->marcarCompletada($idPostulacion, $idDueno);
+
+        if ($ok) {
+            $idPostulante = $this->modelo->obtenerUsuarioDePostulacion($idPostulacion);
+            if ($idPostulante) {
+                require_once __DIR__ . '/../models/NotificacionModel.php';
+                (new NotificacionModel())->notificar(
+                    $idPostulante,
+                    'Un trabajo tuyo se marcó como completado. Ya puedes calificar a la otra persona.',
+                    'views/user/mis_postulaciones.php',
+                    'Trabajo completado en Chamba Ya'
+                );
+            }
+        }
+        $this->redirigirRecibidas($ok ? 'completada' : 'no_completable');
     }
 
     private function redirigirRecibidas(string $estado): never {

@@ -43,9 +43,11 @@
 
                 <?php if (!empty($_GET['estado'])):
                     $msgs = [
-                        'aceptada'  => ['Postulación aceptada.',  '#16a34a'],
-                        'rechazada' => ['Postulación rechazada.', '#64748b'],
-                        'error'     => ['No se pudo procesar la acción.', '#dc2626'],
+                        'aceptada'       => ['Postulación aceptada.',  '#16a34a'],
+                        'rechazada'      => ['Postulación rechazada.', '#64748b'],
+                        'completada'     => ['Trabajo marcado como completado. Ya pueden calificarse.', '#16a34a'],
+                        'no_completable' => ['Solo se puede completar un trabajo que aceptaste antes.', '#d97706'],
+                        'error'          => ['No se pudo procesar la acción.', '#dc2626'],
                     ];
                     $b = $msgs[$_GET['estado']] ?? null;
                     if ($b): ?>
@@ -100,6 +102,23 @@
                                             <button class="boton-accion" type="submit" title="Rechazar"
                                                 onclick="return confirm('¿Rechazar esta postulación?');"><i class="fas fa-times"></i> Rechazar</button>
                                         </form>
+                                    <?php elseif ($p['estado'] === 'Aceptado'): ?>
+                                        <!-- Cerrar el trabajo. Es lo que habilita las
+                                             calificaciones entre las dos partes. -->
+                                        <form action="<?= BASE_URL ?>controllers/PostulacionController.php" method="POST" style="display:inline;">
+                                            <?= campoCsrf() ?>
+                                            <input type="hidden" name="accion" value="gestionar">
+                                            <input type="hidden" name="decision" value="completar">
+                                            <input type="hidden" name="idPostulacion" value="<?= (int) $p['idPostulacion'] ?>">
+                                            <button class="boton-accion" type="submit" title="Marcar como completado"
+                                                onclick="return confirm('¿Dar por completado este trabajo? Después podrán calificarse mutuamente.');">
+                                                <i class="fas fa-flag-checkered"></i> Completar
+                                            </button>
+                                        </form>
+                                    <?php elseif ($p['estado'] === 'Completado'): ?>
+                                        <span style="color:#16a34a;font-size:.85rem;font-weight:600;">
+                                            <i class="fas fa-circle-check"></i> Trabajo completado
+                                        </span>
                                     <?php else: ?>
                                         <span style="color:#94a3b8;font-size:.85rem;">Ya gestionada</span>
                                     <?php endif; ?>
