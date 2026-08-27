@@ -38,8 +38,13 @@
             return $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
+        /**
+         * Cambia la contrasena y, en la misma operacion, invalida la cookie
+         * "recordarme". Si alguien habia robado esa cookie, cambiar la
+         * contrasena debe echarlo fuera; si no, el cambio no sirve de nada.
+         */
         public function updatePassword($id, $newPassword){
-            $sql = "UPDATE usuario SET password = :password WHERE idUsuario = :id";
+            $sql = "UPDATE usuario SET password = :password, remember_token = NULL, remember_token_expira = NULL WHERE idUsuario = :id";
             $password_hash = password_hash($newPassword, PASSWORD_DEFAULT);
             $stmt = $this->conn->prepare($sql);
             $stmt->bindParam(':id', $id);
@@ -57,12 +62,17 @@
 
         // ===== "Recordarme" (cookie de sesión persistente) =====
         // Guarda el HASH del token (nunca el token en texto plano) junto a su fecha de expiración.
-        public function guardarRememberToken($id, $tokenHash, $expira){
-            $sql = "UPDATE usuario SET remember_token = :token, remember_token_expira = :expira WHERE idUsuario = :id";
+        // El vencimiento lo calcula MySQL, por el mismo motivo que en crearTokenReset:
+        // PHP y la base de datos pueden ir en zonas horarias distintas.
+        public function guardarRememberToken($id, $tokenHash, int $diasValidez = 30){
+            $sql = "UPDATE usuario
+                    SET remember_token = :token,
+                        remember_token_expira = DATE_ADD(NOW(), INTERVAL :dias DAY)
+                    WHERE idUsuario = :id";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bindParam(':token', $tokenHash);
-            $stmt->bindParam(':expira', $expira);
-            $stmt->bindParam(':id', $id);
+            $stmt->bindValue(':token', $tokenHash);
+            $stmt->bindValue(':dias', $diasValidez, PDO::PARAM_INT);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             return $stmt->execute();
         }
 
@@ -161,6 +171,36 @@
             $stmt->bindParam(':id', $idUsuario);
             $stmt->execute();
             return $stmt->fetchColumn() > 0;
+        }
+
+        /* ====================================================================
+           MODO ACTIVO (trabajador / cliente)
+           No son roles excluyentes: el usuario conserva todas sus capacidades.
+           El modo solo decide qué panel y qué navegación se le muestran, para
+           que la interfaz no le mezcle "buscar chamba" con "buscar trabajador".
+           ==================================================================== */
+        public function cambiarModo($id, string $modo): bool {
+            // Lista blanca: el valor viene de un formulario, así que nunca se
+            // pasa directo a la consulta aunque la columna sea un ENUM.
+            if (!in_array($modo, ['trabajador', 'cliente'], true)) {
+                return false;
+            }
+            $stmt = $this->conn->prepare("UPDATE usuario SET modo = :modo WHERE idUsuario = :id");
+            $stmt->bindValue(':modo', $modo);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        }
+
+        public function obtenerModo($id): string {
+            try {
+                $stmt = $this->conn->prepare("SELECT modo FROM usuario WHERE idUsuario = :id");
+                $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+                $stmt->execute();
+                $modo = $stmt->fetchColumn();
+                return in_array($modo, ['trabajador', 'cliente'], true) ? $modo : 'trabajador';
+            } catch (PDOException $e) {
+                return 'trabajador';
+            }
         }
 
         public function getPreferencias($id){
@@ -286,6 +326,124 @@
             }catch(PDOException $e){
                 error_log("Error al obtenerEstadisticasPerfil: " . $e->getMessage());
                 return ['anuncios' => 0, 'vistas' => 0, 'postulaciones' => 0, 'calificacion' => 0];
+            }
+        }
+
+        /* ====================================================================
+           RECUPERACIÓN DE CONTRASEÑA POR TOKEN DE UN SOLO USO
+           Reemplaza al método anterior (correo + teléfono), que permitía tomar
+           cualquier cuenta porque el teléfono se publica en los anuncios.
+           ==================================================================== */
+
+        /** Guarda el HASH del token. El token en claro solo viaja en el enlace. */
+        /**
+         * El vencimiento lo calcula MySQL con DATE_ADD(NOW(), ...) y no PHP.
+         * Motivo: PHP y MySQL pueden estar en zonas horarias distintas (aquí había
+         * 7 horas de diferencia). Si PHP escribe la fecha y MySQL la compara con su
+         * propio NOW(), un enlace de 30 minutos acaba siendo válido 7 horas y media.
+         * Usando el reloj de la base de datos en ambos lados, el plazo es exacto.
+         */
+        public function crearTokenReset($idUsuario, string $tokenHash, int $minutosValidez): bool {
+            // Un usuario solo puede tener un enlace activo: se anulan los anteriores.
+            $this->invalidarResetsDeUsuario($idUsuario);
+
+            $sql = "INSERT INTO password_reset (idUsuario, token_hash, expira)
+                    VALUES (:id, :token, DATE_ADD(NOW(), INTERVAL :minutos MINUTE))";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':id', $idUsuario, PDO::PARAM_INT);
+            $stmt->bindValue(':token', $tokenHash);
+            $stmt->bindValue(':minutos', $minutosValidez, PDO::PARAM_INT);
+            return $stmt->execute();
+        }
+
+        /** Devuelve el reset solo si el token existe, no se usó y no caducó. */
+        public function obtenerResetValido(string $tokenHash) {
+            $sql = "SELECT r.idReset, r.idUsuario, u.correo, u.nombres
+                    FROM password_reset r
+                    INNER JOIN usuario u ON r.idUsuario = u.idUsuario
+                    WHERE r.token_hash = :token
+                      AND r.usado = 0
+                      AND r.expira > NOW()";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':token', $tokenHash);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        /** Marca el token como consumido: un enlace de recuperación sirve una sola vez. */
+        public function marcarResetUsado($idReset): bool {
+            $stmt = $this->conn->prepare("UPDATE password_reset SET usado = 1 WHERE idReset = :id");
+            $stmt->bindValue(':id', $idReset, PDO::PARAM_INT);
+            return $stmt->execute();
+        }
+
+        public function invalidarResetsDeUsuario($idUsuario): bool {
+            $stmt = $this->conn->prepare("UPDATE password_reset SET usado = 1 WHERE idUsuario = :id AND usado = 0");
+            $stmt->bindValue(':id', $idUsuario, PDO::PARAM_INT);
+            return $stmt->execute();
+        }
+
+        /* ====================================================================
+           CONTROL DE INTENTOS DE INICIO DE SESIÓN
+           El contador vive en la base de datos y no en $_SESSION: si vive en la
+           sesión, el atacante lo borra con su propia cookie y el bloqueo no sirve.
+           ==================================================================== */
+
+        public function registrarIntentoLogin(string $correo, string $ip, bool $exito): void {
+            try {
+                $stmt = $this->conn->prepare("INSERT INTO intento_login (correo, ip, exito) VALUES (:correo, :ip, :exito)");
+                $stmt->bindValue(':correo', mb_substr($correo, 0, 80));
+                $stmt->bindValue(':ip', mb_substr($ip, 0, 45));
+                $stmt->bindValue(':exito', $exito ? 1 : 0, PDO::PARAM_INT);
+                $stmt->execute();
+            } catch (PDOException $e) {
+                error_log("Error al registrar intento de login: " . $e->getMessage());
+            }
+        }
+
+        /**
+         * Cuenta los fallos recientes de ese correo O de esa IP.
+         * Se miran ambos: por correo frena el ataque a una cuenta concreta, y por
+         * IP frena a quien prueba muchos correos distintos desde el mismo sitio.
+         */
+        public function contarIntentosFallidos(string $correo, string $ip, int $ventanaSegundos): int {
+            try {
+                $sql = "SELECT COUNT(*) FROM intento_login
+                        WHERE exito = 0
+                          AND fecha > (NOW() - INTERVAL :ventana SECOND)
+                          AND (correo = :correo OR ip = :ip)";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bindValue(':ventana', $ventanaSegundos, PDO::PARAM_INT);
+                $stmt->bindValue(':correo', $correo);
+                $stmt->bindValue(':ip', $ip);
+                $stmt->execute();
+                return (int) $stmt->fetchColumn();
+            } catch (PDOException $e) {
+                error_log("Error al contar intentos de login: " . $e->getMessage());
+                return 0;
+            }
+        }
+
+        /** Tras un login correcto se borran los fallos, para no arrastrar el bloqueo. */
+        public function limpiarIntentosFallidos(string $correo, string $ip): void {
+            try {
+                $stmt = $this->conn->prepare("DELETE FROM intento_login WHERE exito = 0 AND (correo = :correo OR ip = :ip)");
+                $stmt->bindValue(':correo', $correo);
+                $stmt->bindValue(':ip', $ip);
+                $stmt->execute();
+            } catch (PDOException $e) {
+                error_log("Error al limpiar intentos de login: " . $e->getMessage());
+            }
+        }
+
+        /** Borra los registros viejos para que la tabla no crezca sin control. */
+        public function purgarIntentosAntiguos(int $dias = 7): void {
+            try {
+                $stmt = $this->conn->prepare("DELETE FROM intento_login WHERE fecha < (NOW() - INTERVAL :dias DAY)");
+                $stmt->bindValue(':dias', $dias, PDO::PARAM_INT);
+                $stmt->execute();
+            } catch (PDOException $e) {
+                error_log("Error al purgar intentos: " . $e->getMessage());
             }
         }
     }

@@ -1,8 +1,8 @@
 <?php 
     require_once __DIR__ . '/../../core/config/config.php';
-    require_once '../../assets/css/style.php';
-    require_once '../../assets/css/styles.php';
-    require_once '../../assets/css/style_lr.php';
+    require_once __DIR__ . '/../../assets/css/style.php';
+    require_once __DIR__ . '/../../assets/css/styles.php';
+    require_once __DIR__ . '/../../assets/css/style_lr.php';
 ?>
 <head>
     <meta charset="UTF-8">
@@ -20,6 +20,7 @@
     <div class="container">
         <div class="form_box login">
             <form action="../../controllers/AuthController.php?action=login" method="post" id="loginForm">
+                    <?= campoCsrf() ?>
                 <h1>Iniciar Sesión</h1>
                 <?php if(isset($_GET['login_status'])):
                     $infoMsgs = [
@@ -27,14 +28,17 @@
                         'cuenta_desactivada' => 'Tu cuenta fue desactivada. Inicia sesión para reactivarla.',
                     ];
                     $errMsgs = [
-                        'not_found'      => 'El usuario no está registrado.',
-                        'wrong_password' => 'Contraseña incorrecta.',
+                        // Un único mensaje para "correo inexistente" y "contraseña
+                        // incorrecta". Distinguirlos le confirmaría a un atacante qué
+                        // correos están registrados (enumeración de usuarios).
+                        'credenciales'     => 'Correo o contraseña incorrectos.',
+                        'cuenta_bloqueada' => 'Esta cuenta está suspendida. Contacta con soporte.',
                     ];
                     $ls = $_GET['login_status'];
                 ?>
-                    <?php if($ls === 'bloqueado'): $espera = max(1, (int)($_GET['espera'] ?? 60)); ?>
-                        <p class="form_msg form_msg_error" id="bloqueoMsg" data-espera="<?= $espera ?>">
-                            Demasiados intentos fallidos. Espera <span id="bloqueoSeg"><?= $espera ?></span> s para volver a intentar.
+                    <?php if($ls === 'bloqueado'): $espera = max(1, (int)($_GET['espera'] ?? 900)); $minutos = (int) ceil($espera / 60); ?>
+                        <p class="form_msg form_msg_error">
+                            Demasiados intentos fallidos. Vuelve a intentarlo en unos <?= $minutos ?> minuto<?= $minutos === 1 ? '' : 's' ?>.
                         </p>
                     <?php elseif(isset($infoMsgs[$ls])): ?>
                         <p class="form_msg" style="color:#16a34a;"><?= htmlspecialchars($infoMsgs[$ls]) ?></p>
@@ -71,16 +75,20 @@
 
         <div class="form_box register">
             <form action="../../controllers/AuthController.php?action=registerFirst" method="POST" id="registerForm">
+                    <?= campoCsrf() ?>
                 <h1>Registrarse</h1>
                 <?php if(isset($_GET['reg_status'])): ?>
                     <?php
                         $regMsgs = [
-                            'email_exists' => 'El correo ya está registrado.',
-                            'mismatch'     => 'Las contraseñas no coinciden.',
-                            'short'        => 'La contraseña debe tener al menos 8 caracteres.',
-                            'bad_format'   => 'Imagen no válida. Solo JPG o PNG.',
-                            'too_big'      => 'La imagen supera el tamaño máximo (2 MB).',
-                            'error'        => 'No se pudo completar el registro.',
+                            'email_exists'   => 'El correo ya está registrado.',
+                            'email_invalido' => 'Escribe un correo válido.',
+                            'mismatch'       => 'Las contraseñas no coinciden.',
+                            'short'          => 'La contraseña debe tener entre 8 y 72 caracteres.',
+                            'campos'         => 'Nombres y apellidos son obligatorios.',
+                            'telefono'       => 'El teléfono debe tener 9 dígitos.',
+                            'bad_format'     => 'Imagen no válida. Solo JPG o PNG.',
+                            'too_big'        => 'La imagen supera el tamaño máximo (2 MB).',
+                            'error'          => 'No se pudo completar el registro.',
                         ];
                         $msg = $regMsgs[$_GET['reg_status']] ?? 'Ocurrió un error en el registro.';
                     ?>
@@ -123,40 +131,6 @@
         </div>
     </div>
 
-    <!-- Cuenta regresiva del bloqueo temporal por intentos fallidos -->
-    <script>
-        (function () {
-            const aviso = document.getElementById('bloqueoMsg');
-            if (!aviso) return;
-
-            let restante = parseInt(aviso.dataset.espera, 10) || 60;
-            const spanSeg = document.getElementById('bloqueoSeg');
-            const btn = document.querySelector('#loginForm button[name="login"]');
-
-            if (btn) {
-                btn.disabled = true;
-                btn.style.opacity = '0.6';
-                btn.style.cursor = 'not-allowed';
-            }
-
-            const temporizador = setInterval(function () {
-                restante--;
-                if (spanSeg) spanSeg.textContent = restante;
-
-                if (restante <= 0) {
-                    clearInterval(temporizador);
-                    aviso.textContent = 'Ya puedes volver a intentar iniciar sesión.';
-                    aviso.classList.remove('form_msg_error');
-                    aviso.style.color = '#16a34a';
-                    if (btn) {
-                        btn.disabled = false;
-                        btn.style.opacity = '';
-                        btn.style.cursor = '';
-                    }
-                }
-            }, 1000);
-        })();
-    </script>
 </body>
 
 </html>

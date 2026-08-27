@@ -43,6 +43,11 @@ class PerfilController {
         $habilidades = (new HabilidadModel())->obtenerNombresDeUsuario($idUsuario);
         $servicios = $this->anuncioModel->obtenerServiciosActivosDeUsuario($idUsuario);
 
+        // Trabajos anteriores: completan el perfil junto a la descripción y las
+        // habilidades, que ya existían.
+        require_once __DIR__ . '/../models/PortafolioModel.php';
+        $portafolio = (new PortafolioModel())->obtenerDeUsuario($idUsuario);
+
         $idUsuarioActivo = obtenerIdUsuarioActivo();
         $esUnoMismo = $idUsuarioActivo > 0 && $idUsuarioActivo === $idUsuario;
         $esTrabajadorFavorito = false;

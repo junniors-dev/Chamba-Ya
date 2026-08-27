@@ -2,8 +2,21 @@
     require_once __DIR__ . '/../core/config/autoload.php';
     require_once __DIR__ . '/../core/config/config.php';
     require_once __DIR__ . '/../core/config/session.php';
+    require_once __DIR__ . '/../core/config/email.php';
+    require_once __DIR__ . '/../core/security/csrf.php';
+    require_once __DIR__ . '/../core/security/validacion.php';
 
     class AuthController{
+
+        /* ================== Política de intentos de inicio de sesión ==================
+           El contador se guarda en la base de datos (tabla intento_login), no en la
+           sesión: si vive en $_SESSION, el atacante lo borra con su propia cookie y
+           el bloqueo se evade en un segundo. */
+        const MAX_INTENTOS_LOGIN = 5;    // fallos permitidos dentro de la ventana
+        const VENTANA_INTENTOS   = 900;  // ventana de 15 minutos
+
+        // Validez del enlace de recuperación de contraseña.
+        const RESET_VALIDEZ_MINUTOS = 30;
 
         private $userModel;
 
@@ -11,12 +24,29 @@
             $this->userModel = new UserModel();
         }
 
+        /** IP del visitante, para el control de intentos. */
+        private function ipCliente(): string {
+            return (string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        }
+
+        /* ============================================================
+           REGISTRO
+           ============================================================ */
+
         public function registerFirst(){
             iniciarSesion();
+            verificarCsrf();
 
-            $email = $_POST['emailInput'] ?? '';
-            $password = $_POST['password'] ?? '';
+            $email           = normalizarCorreo($_POST['emailInput'] ?? '');
+            $password        = $_POST['password'] ?? '';
             $confirmPassword = $_POST['confirmPassword'] ?? '';
+
+            // Validación de formato en el servidor: el type="email" del HTML es solo
+            // una ayuda visual, cualquiera puede enviar un POST saltándose el formulario.
+            if(!esCorreoValido($email)){
+                header('Location: ' . BASE_URL . 'views/auth/login.php?reg_status=email_invalido');
+                exit();
+            }
 
             if($this->userModel->emailExists($email)){
                 header('Location: ' . BASE_URL . 'views/auth/login.php?reg_status=email_exists');
@@ -28,8 +58,8 @@
                 exit();
             }
 
-            // Misma regla que en cambiar/recuperar contraseña
-            if(strlen($password) < 8){
+            // Mínimo 8 y máximo 72: bcrypt trunca en silencio a partir de 72 bytes.
+            if(!esPasswordValida($password)){
                 header('Location: ' . BASE_URL . 'views/auth/login.php?reg_status=short');
                 exit();
             }
@@ -56,189 +86,208 @@
             require_once __DIR__ . '/../views/auth/form_datos_user.php';
         }
 
-        // Bloqueo temporal por intentos fallidos.
-        const MAX_INTENTOS_LOGIN = 3;   // intentos permitidos antes del bloqueo
-        const BLOQUEO_SEGUNDOS   = 60;  // duración del bloqueo temporal
-
-        public function login(){
-            iniciarSesion();
-
-            // Si hay un bloqueo temporal activo, no se procesa el login.
-            if(isset($_SESSION['login_bloqueo_hasta']) && time() < $_SESSION['login_bloqueo_hasta']){
-                $restante = $_SESSION['login_bloqueo_hasta'] - time();
-                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=bloqueado&espera=' . $restante);
-                exit();
-            }
-
-            $correo = $_POST['emailInput'] ?? '';
-            $password = $_POST['passwordInput'] ?? '';
-            $recordarme = isset($_POST['recordarme']);
-
-            $usuario = $this->userModel->getUserByEmail($correo);
-
-            // Correo no registrado: cuenta como intento fallido.
-            if(!$usuario){
-                $this->registrarIntentoFallido('not_found');
-            }
-
-            if(password_verify($password, $usuario['password'])){
-                // Login correcto: se reinicia el contador de intentos.
-                unset($_SESSION['login_intentos'], $_SESSION['login_bloqueo_hasta']);
-
-                // Si la cuenta estaba desactivada, se reactiva al entrar.
-                if(($usuario['estado'] ?? '') === 'Inactivo'){
-                    $this->userModel->reactivarUsuario($usuario['idUsuario']);
-                }
-                $_SESSION['nombres'] = $usuario['nombres'];
-                $_SESSION['idUsuario'] = $usuario['idUsuario'];
-                $_SESSION['emailUsuario'] = $usuario['correo'];
-                $_SESSION['rol'] = $usuario['rol'] ?? 'usuario';
-
-                // "Recordarme": crea una cookie persistente segura (30 días).
-                if($recordarme){
-                    $this->crearCookieRecordarme($usuario['idUsuario']);
-                }
-
-                header('Location: ' . BASE_URL . 'index.php');
-                exit();
-            } else {
-                // Contraseña incorrecta: cuenta como intento fallido.
-                $this->registrarIntentoFallido('wrong_password');
-            }
-        }
-
-        // Suma un intento fallido y, al llegar al máximo, activa el bloqueo temporal.
-        // Siempre termina redirigiendo (no retorna).
-        private function registrarIntentoFallido(string $motivo): void {
-            $_SESSION['login_intentos'] = ($_SESSION['login_intentos'] ?? 0) + 1;
-
-            if($_SESSION['login_intentos'] >= self::MAX_INTENTOS_LOGIN){
-                $_SESSION['login_bloqueo_hasta'] = time() + self::BLOQUEO_SEGUNDOS;
-                $_SESSION['login_intentos'] = 0; // se reinicia para dar 3 intentos nuevos tras el bloqueo
-                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=bloqueado&espera=' . self::BLOQUEO_SEGUNDOS);
-                exit();
-            }
-
-            header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=' . $motivo);
-            exit();
-        }
-
-        // Genera un token aleatorio: el hash va a la BD, el token plano a la cookie.
-        private function crearCookieRecordarme($idUsuario): void {
-            $tokenPlano = bin2hex(random_bytes(32));
-            $tokenHash  = hash('sha256', $tokenPlano);
-            $expira     = date('Y-m-d H:i:s', strtotime('+30 days'));
-
-            $this->userModel->guardarRememberToken($idUsuario, $tokenHash, $expira);
-
-            setcookie('remember_token', $tokenPlano, [
-                'expires'  => strtotime('+30 days'),
-                'path'     => '/',
-                'httponly' => true,   // JS no puede leerla (protege de XSS)
-                'samesite' => 'Lax',
-            ]);
-        }
-
         public function completeRegister(){
             iniciarSesion();
+            verificarCsrf();
 
             if(!isset($_SESSION['registro_email']) || !isset($_SESSION['registro_password'])){
                 header('Location: ' . BASE_URL . 'views/auth/login.php');
                 exit();
             }
 
-            $correo = $_SESSION['registro_email'];
+            $correo   = $_SESSION['registro_email'];
             $password = $_SESSION['registro_password'];
 
-            $fotoPerfil = $_FILES['fotoPerfil'] ?? null;
-            $descripcionPerfil = $_POST['descripcionPerfil'] ?? '';
-            $nombres = $_POST['nombres'] ?? '';
-            $apellidos = $_POST['apellidos'] ?? '';
-            $telefono = $_POST['telefono'] ?? '';
-            $direccionDomicilio = $_POST['direccionDomicilio'] ?? '';
-            $codigoPostal = $_POST['codigoPostal'] ?? '';
-            $fechaRegistro = date('Y-m-d H:i:s');
-            $estado = 'Activo';
+            $descripcionPerfil  = limpiarTexto($_POST['descripcionPerfil'] ?? '', 1000);
+            $nombres            = limpiarTexto($_POST['nombres'] ?? '', 100);
+            $apellidos          = limpiarTexto($_POST['apellidos'] ?? '', 100);
+            $telefono           = normalizarTelefono($_POST['telefono'] ?? '');
+            $direccionDomicilio = limpiarTexto($_POST['direccionDomicilio'] ?? '', 200);
+            $codigoPostal       = limpiarTexto($_POST['codigoPostal'] ?? '', 5);
+            $fechaRegistro      = date('Y-m-d H:i:s');
+            $estado             = 'Activo';
             // null si no eligió distrito (antes: '' rompía la FK con error fatal)
-            $idDistrito = !empty($_POST['distrito']) ? $_POST['distrito'] : null;
-            $nombreFoto = null; // si no sube foto, queda null (antes: variable indefinida)
+            $idDistrito = !empty($_POST['distrito']) ? (int) $_POST['distrito'] : null;
+            $nombreFoto = null; // si no sube foto, queda null
+
+            // Campos obligatorios: se validan aquí y no solo con "required" en el HTML.
+            if($nombres === '' || $apellidos === ''){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos&reg_status=campos');
+                exit();
+            }
+            if($telefono !== '' && !esTelefonoValido($telefono)){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos&reg_status=telefono');
+                exit();
+            }
 
             // Solo procesar la imagen si el usuario subió una
             if(isset($_FILES['fotoPerfil']) && $_FILES['fotoPerfil']['error'] === UPLOAD_ERR_OK){
 
-            $extension = pathinfo($_FILES['fotoPerfil']['name'], PATHINFO_EXTENSION);
-            $permitidos = ['jpg', 'jpeg', 'png'];
+                $extension  = strtolower(pathinfo($_FILES['fotoPerfil']['name'], PATHINFO_EXTENSION));
+                $permitidos = ['jpg', 'jpeg', 'png'];
 
-            if(!in_array(strtolower($extension), $permitidos)){
-                header('Location: AuthController.php?action=showFormDatos&reg_status=bad_format');
-                exit();
-            }
+                if(!in_array($extension, $permitidos, true)){
+                    header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos&reg_status=bad_format');
+                    exit();
+                }
 
-            $maxBytes = 2 * 1024 * 1024; //maximo de bytes permitidos para la foto de perfil y asi evitar cargas de archivos pesados a la bd
+                $maxBytes = 2 * 1024 * 1024; // 2 MB
+                if($_FILES['fotoPerfil']['size'] > $maxBytes){
+                    header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos&reg_status=too_big');
+                    exit();
+                }
 
-            if($_FILES['fotoPerfil']['size'] > $maxBytes){
-                header('Location: AuthController.php?action=showFormDatos&reg_status=too_big');
-                exit();
-            }
+                // Comprueba el tipo REAL del archivo, no la extensión: renombrar
+                // un .php a .jpg no cambia su contenido.
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeReal = finfo_file($finfo, $_FILES['fotoPerfil']['tmp_name']);
+                finfo_close($finfo);
 
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mimeReal = finfo_file($finfo, $_FILES['fotoPerfil']['tmp_name']);
-            finfo_close($finfo);
+                if(!in_array($mimeReal, ['image/jpeg', 'image/png'], true)){
+                    header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos&reg_status=bad_format');
+                    exit();
+                }
 
-            $mimesPermitidos = ['image/jpeg', 'image/png']; //mimes permitidos para las imagenes
+                // El nombre lo genera el servidor: nunca se usa el del cliente,
+                // que podría contener "../" y escribir fuera de la carpeta.
+                $nombreFoto  = bin2hex(random_bytes(8)) . '.' . $extension;
+                $rutaDestino = __DIR__ . '/../assets/uploads/img_perfiles/' . $nombreFoto;
 
-            if(!in_array($mimeReal, $mimesPermitidos)){
-                header('Location: AuthController.php?action=showFormDatos&reg_status=bad_format');
-                exit();
-            }
-
-            $nombreFoto = uniqid() . '.' . $extension;
-
-            $rutaDestino = __DIR__ . '/../assets/uploads/img_perfiles/' . $nombreFoto;
-
-            move_uploaded_file($_FILES['fotoPerfil']['tmp_name'], $rutaDestino);
+                if(!move_uploaded_file($_FILES['fotoPerfil']['tmp_name'], $rutaDestino)){
+                    $nombreFoto = null;
+                }
             }
 
             $resultado = $this->userModel->createUser(
-                $nombreFoto,
-                $nombres,
-                $apellidos,
-                $descripcionPerfil,
-                $telefono,
-                $correo,
-                $password,
-                $direccionDomicilio,
-                $codigoPostal,
-                $fechaRegistro,
-                $estado,
-                $idDistrito
+                $nombreFoto, $nombres, $apellidos, $descripcionPerfil, $telefono,
+                $correo, $password, $direccionDomicilio, $codigoPostal,
+                $fechaRegistro, $estado, $idDistrito
             );
 
             if($resultado){
                 $usuario = $this->userModel->getUserByEmail($correo);
 
-                $_SESSION['idUsuario'] = $usuario['idUsuario'];
-                $_SESSION['nombres'] = $usuario['nombres'];
-                $_SESSION['emailUsuario'] = $usuario['correo'];
-                $_SESSION['rol'] = 'usuario'; // los nuevos registros siempre son rol usuario
+                // La sesión pasa de anónima a autenticada: se cambia el identificador.
+                regenerarSesion();
 
-                unset($_SESSION['registro_email']);
-                unset($_SESSION['registro_password']);
+                $_SESSION['idUsuario']    = $usuario['idUsuario'];
+                $_SESSION['nombres']      = $usuario['nombres'];
+                $_SESSION['emailUsuario'] = $usuario['correo'];
+                $_SESSION['rol']          = 'usuario'; // los nuevos registros siempre son rol usuario
+
+                unset($_SESSION['registro_email'], $_SESSION['registro_password']);
 
                 header('Location: ' . BASE_URL . 'index.php');
                 exit();
-            }else{
-                header('Location: AuthController.php?action=showFormDatos&reg_status=error');
+            }
+
+            header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showFormDatos&reg_status=error');
+            exit();
+        }
+
+        /* ============================================================
+           INICIO DE SESIÓN
+           ============================================================ */
+
+        public function login(){
+            iniciarSesion();
+            verificarCsrf();
+
+            $correo     = normalizarCorreo($_POST['emailInput'] ?? '');
+            $password   = $_POST['passwordInput'] ?? '';
+            $recordarme = isset($_POST['recordarme']);
+            $ip         = $this->ipCliente();
+
+            // Bloqueo por intentos fallidos, contados en la base de datos.
+            $fallos = $this->userModel->contarIntentosFallidos($correo, $ip, self::VENTANA_INTENTOS);
+            if($fallos >= self::MAX_INTENTOS_LOGIN){
+                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=bloqueado&espera=' . self::VENTANA_INTENTOS);
                 exit();
             }
-        }   
+
+            $usuario = $this->userModel->getUserByEmail($correo);
+
+            // Si el correo no existe se compara igualmente contra un hash ficticio.
+            // Así el tiempo de respuesta es parecido en ambos casos y no se puede
+            // deducir qué correos están registrados midiendo la demora.
+            $hashGuardado = $usuario['password'] ?? '$2y$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRS';
+            $passwordOk   = password_verify($password, $hashGuardado);
+
+            if(!$usuario || !$passwordOk){
+                $this->userModel->registrarIntentoLogin($correo, $ip, false);
+                // Mensaje único: no se distingue "correo no existe" de "contraseña
+                // incorrecta", porque esa diferencia le confirma al atacante qué
+                // cuentas existen (enumeración de usuarios).
+                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=credenciales');
+                exit();
+            }
+
+            // Se distingue QUIÉN desactivó la cuenta, porque antes no se distinguía y
+            // cualquier estado se reactivaba solo al iniciar sesión: un usuario
+            // suspendido por el administrador volvía a entrar como si nada.
+            //
+            //   Inactivo               -> el propio usuario se dio de baja: puede volver.
+            //   Suspendido / Bloqueado -> sanción del administrador: no entra.
+            $estado = $usuario['estado'] ?? 'Activo';
+
+            if($estado === 'Suspendido' || $estado === 'Bloqueado'){
+                $this->userModel->registrarIntentoLogin($correo, $ip, false);
+                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=cuenta_bloqueada');
+                exit();
+            }
+
+            if($estado === 'Inactivo'){
+                // Baja voluntaria: al iniciar sesión la cuenta vuelve a estar activa.
+                $this->userModel->reactivarUsuario($usuario['idUsuario']);
+            }
+
+            // Credenciales correctas.
+            $this->userModel->registrarIntentoLogin($correo, $ip, true);
+            $this->userModel->limpiarIntentosFallidos($correo, $ip);
+
+            // Defensa contra "session fixation": si un atacante había fijado un id de
+            // sesión antes del login, ese id deja de valer justo ahora.
+            regenerarSesion();
+
+            $_SESSION['nombres']      = $usuario['nombres'];
+            $_SESSION['idUsuario']    = $usuario['idUsuario'];
+            $_SESSION['emailUsuario'] = $usuario['correo'];
+            $_SESSION['rol']          = $usuario['rol'] ?? 'usuario';
+            // Modo activo (trabajador / cliente): decide qué panel ve al entrar.
+            $_SESSION['modo']         = $usuario['modo'] ?? 'trabajador';
+
+            // "Recordarme": cookie persistente de 30 días.
+            if($recordarme){
+                $this->crearCookieRecordarme($usuario['idUsuario']);
+            }
+
+            header('Location: ' . BASE_URL . 'index.php');
+            exit();
+        }
+
+        // Genera un token aleatorio: el hash va a la BD, el token plano a la cookie.
+        // Si alguien lee la base de datos no obtiene una cookie utilizable.
+        private function crearCookieRecordarme($idUsuario): void {
+            $tokenPlano = bin2hex(random_bytes(32));
+            $tokenHash  = hash('sha256', $tokenPlano);
+
+            $this->userModel->guardarRememberToken($idUsuario, $tokenHash, 30);
+
+            setcookie('remember_token', $tokenPlano, [
+                'expires'  => strtotime('+30 days'),
+                'path'     => '/',
+                'httponly' => true,   // JS no puede leerla (protege de XSS)
+                'samesite' => 'Lax',  // no viaja en peticiones desde otros sitios
+                'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+            ]);
+        }
+
+        /* ============================================================
+           PERFIL Y AJUSTES
+           ============================================================ */
 
         public function showMisDatos(){
-            iniciarSesion();
-            if(!isset($_SESSION['idUsuario'])){
-                header('Location: ' . BASE_URL . 'views/auth/login.php');
-                exit();
-            }
+            requireLogin();
 
             $usuario = $this->userModel->getUserById($_SESSION['idUsuario']);
 
@@ -254,92 +303,165 @@
             $departamentos = $this->userModel->getDepartamentos();
 
             require_once __DIR__ . '/../models/HabilidadModel.php';
-            $habModel = new HabilidadModel();
-            $habilidades = $habModel->obtenerTodas();
+            $habModel       = new HabilidadModel();
+            $habilidades    = $habModel->obtenerTodas();
             $misHabilidades = $habModel->obtenerIdsDeUsuario($_SESSION['idUsuario']);
 
             // Resumen para el mini-dashboard del perfil.
             $estadisticas = $this->userModel->obtenerEstadisticasPerfil($_SESSION['idUsuario']);
+
+            // Portafolio de trabajos anteriores y categorías para el formulario.
+            require_once __DIR__ . '/../models/PortafolioModel.php';
+            require_once __DIR__ . '/../models/anuncioModel.php';
+            $portModel      = new PortafolioModel();
+            $portafolio     = $portModel->obtenerDeUsuario($_SESSION['idUsuario']);
+            $portafolioLleno = count($portafolio) >= PortafolioModel::MAX_POR_USUARIO;
+            $categoriasPort = (new AnuncioModel())->obtenerCategorias();
 
             global $base_path;
             require_once __DIR__ . '/../views/user/mis_datos.php';
         }
 
         public function showSeguridad(){
-            iniciarSesion();
-            if(!isset($_SESSION['idUsuario'])){
-                header('Location: ' . BASE_URL . 'views/auth/login.php');
-                exit();
-            }
+            requireLogin();
             global $base_path;
             require_once __DIR__ . '/../views/user/seguridad.php';
         }
 
         public function showPreferencias(){
-            iniciarSesion();
-            if(!isset($_SESSION['idUsuario'])){
-                header('Location: ' . BASE_URL . 'views/auth/login.php');
-                exit();
-            }
+            requireLogin();
             $preferencias = $this->userModel->getPreferencias($_SESSION['idUsuario']);
             global $base_path;
             require_once __DIR__ . '/../views/user/preferencias.php';
         }
 
         public function guardarPreferencias(){
-            iniciarSesion();
+            requireLogin();
             if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
-            if(!isset($_SESSION['idUsuario'])){ die('No autorizado'); }
+            verificarCsrf();
 
-            $id = $_SESSION['idUsuario'];
+            $id      = $_SESSION['idUsuario'];
             $ofertas = isset($_POST['notif_ofertas']) ? 1 : 0;
             $vistas  = isset($_POST['notif_vistas'])  ? 1 : 0;
             $boletin = isset($_POST['notif_boletin']) ? 1 : 0;
 
-            $validas = ['publico', 'solo_empresas', 'oculto'];
-            $visibilidad = in_array($_POST['visibilidad'] ?? '', $validas) ? $_POST['visibilidad'] : 'publico';
+            $validas     = ['publico', 'solo_empresas', 'oculto'];
+            $visibilidad = in_array($_POST['visibilidad'] ?? '', $validas, true) ? $_POST['visibilidad'] : 'publico';
 
             $this->userModel->guardarPreferencias($id, $ofertas, $vistas, $boletin, $visibilidad);
             header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showPreferencias&pref_status=success');
             exit();
         }
 
-        public function desactivarCuenta(){
-            iniciarSesion();
+        /**
+         * Cambia el modo activo (trabajador / cliente).
+         *
+         * No es un cambio de rol ni de permisos: el usuario conserva todo lo que
+         * podía hacer. Solo cambia qué panel y qué navegación ve, para que la
+         * interfaz no le mezcle "buscar chamba" con "buscar trabajador".
+         */
+        public function cambiarModo(){
+            requireLogin();
             if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
-            if(!isset($_SESSION['idUsuario'])){ die('No autorizado'); }
-            $this->userModel->desactivarUsuario($_SESSION['idUsuario']);
-            $_SESSION = [];
-            session_destroy();
+            verificarCsrf();
+
+            $modo = $_POST['modo'] ?? '';
+            if(!in_array($modo, ['trabajador', 'cliente'], true)){
+                $modo = 'trabajador';
+            }
+
+            $this->userModel->cambiarModo($_SESSION['idUsuario'], $modo);
+            $_SESSION['modo'] = $modo;
+
+            // Vuelve a donde estaba, si el destino es del propio sitio.
+            $destino = $_POST['volver_a'] ?? '';
+            header('Location: ' . $this->destinoSeguro($destino));
+            exit();
+        }
+
+        /**
+         * Solo se aceptan rutas internas. Si se redirigiera a lo que llegue por
+         * POST, la página serviría de trampolín hacia sitios externos (open
+         * redirect), que es como se disfrazan los enlaces de phishing.
+         */
+        private function destinoSeguro(string $destino): string {
+            // Se descarta cualquier cosa con esquema o que empiece por "//".
+            if ($destino === '' || preg_match('#^[a-z][a-z0-9+.-]*:#i', $destino) || str_starts_with($destino, '//')) {
+                return BASE_URL . 'index.php';
+            }
+            // Solo se conserva la parte de ruta y consulta.
+            $partes = parse_url($destino);
+            if ($partes === false || isset($partes['host'])) {
+                return BASE_URL . 'index.php';
+            }
+            $ruta = ($partes['path'] ?? '') . (isset($partes['query']) ? '?' . $partes['query'] : '');
+            return $ruta !== '' ? $ruta : BASE_URL . 'index.php';
+        }
+
+        public function desactivarCuenta(){
+            requireLogin();
+            if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
+            verificarCsrf();
+
+            $id = $_SESSION['idUsuario'];
+            $this->userModel->desactivarUsuario($id);
+            // La cookie "recordarme" también se anula: si no, volvería a entrar solo.
+            $this->userModel->limpiarRememberToken($id);
+            borrarCookieRecordarme();
+            cerrarSesion();
+
             header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=cuenta_desactivada');
             exit();
         }
 
         public function eliminarCuenta(){
-            iniciarSesion();
+            requireLogin();
             if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
-            if(!isset($_SESSION['idUsuario'])){ die('No autorizado'); }
+            verificarCsrf();
+
+            // Borrar la cuenta es irreversible: se exige la contraseña actual, para
+            // que un enlace malicioso no pueda provocarlo con un solo clic.
+            $password = $_POST['passwordConfirmacion'] ?? '';
+            $usuario  = $this->userModel->getUserById($_SESSION['idUsuario']);
+            if(!$usuario || !password_verify($password, $usuario['password'])){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=wrong');
+                exit();
+            }
+
             $this->userModel->eliminarCuentaCompleta($_SESSION['idUsuario']);
-            $_SESSION = [];
-            session_destroy();
+            borrarCookieRecordarme();
+            cerrarSesion();
+
             header('Location: ' . BASE_URL . 'index.php');
             exit();
         }
 
         public function updateMisDatos(){
-            iniciarSesion();
-            if(!isset($_SESSION['idUsuario'])){
-                die('No autorizado');
-            }
+            requireLogin();
+            if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
+            verificarCsrf();
 
-            $idUsuario = $_SESSION['idUsuario'];
-            $nombres = $_POST['nombres'] ?? '';
-            $apellidos = $_POST['apellidos'] ?? '';
-            $correo = $_POST['correo'] ?? '';
-            $telefono = $_POST['telefono'] ?? '';
-            $direccionDomicilio = $_POST['direccionDomicilio'] ?? '';
-            $codigoPostal = $_POST['codigoPostal'] ?? '';
-            $idDistrito = !empty($_POST['distrito']) ? $_POST['distrito'] : null;
+            $idUsuario          = $_SESSION['idUsuario'];
+            $nombres            = limpiarTexto($_POST['nombres'] ?? '', 100);
+            $apellidos          = limpiarTexto($_POST['apellidos'] ?? '', 100);
+            $correo             = normalizarCorreo($_POST['correo'] ?? '');
+            $telefono           = normalizarTelefono($_POST['telefono'] ?? '');
+            $direccionDomicilio = limpiarTexto($_POST['direccionDomicilio'] ?? '', 200);
+            $codigoPostal       = limpiarTexto($_POST['codigoPostal'] ?? '', 5);
+            $idDistrito         = !empty($_POST['distrito']) ? (int) $_POST['distrito'] : null;
+
+            if($nombres === '' || $apellidos === ''){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=campos');
+                exit();
+            }
+            if(!esCorreoValido($correo)){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=email_invalido');
+                exit();
+            }
+            if($telefono !== '' && !esTelefonoValido($telefono)){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=telefono');
+                exit();
+            }
 
             // No permitir cambiar el correo a uno que ya usa otra cuenta.
             if($this->userModel->correoEnUsoPorOtro($correo, $idUsuario)){
@@ -348,27 +470,26 @@
             }
 
             $fotoPerfilData = null;
-            if(isset($_FILES['fotoPerfil']) && $_FILES['fotoPerfil']['error'] == UPLOAD_ERR_OK){
-                $extension = strtolower(pathinfo($_FILES['fotoPerfil']['name'], PATHINFO_EXTENSION));
+            if(isset($_FILES['fotoPerfil']) && $_FILES['fotoPerfil']['error'] === UPLOAD_ERR_OK){
+                $extension  = strtolower(pathinfo($_FILES['fotoPerfil']['name'], PATHINFO_EXTENSION));
                 $permitidos = ['jpg', 'jpeg', 'png', 'webp'];
-                if(!in_array($extension, $permitidos)){
+                if(!in_array($extension, $permitidos, true)){
                     header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=error'); exit();
                 }
 
-                // Validación del archivo: tamaño máximo y tipo MIME real
                 $maxBytes = 2 * 1024 * 1024; // 2 MB
                 if($_FILES['fotoPerfil']['size'] > $maxBytes){
-                    header('Location: AuthController.php?action=showMisDatos&status=error'); exit();
+                    header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=error'); exit();
                 }
+
                 $finfo = finfo_open(FILEINFO_MIME_TYPE);
                 $mimeReal = finfo_file($finfo, $_FILES['fotoPerfil']['tmp_name']);
                 finfo_close($finfo);
-                $mimesPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
-                if(!in_array($mimeReal, $mimesPermitidos)){
-                    header('Location: AuthController.php?action=showMisDatos&status=error'); exit();
+                if(!in_array($mimeReal, ['image/jpeg', 'image/png', 'image/webp'], true)){
+                    header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=error'); exit();
                 }
 
-                $nombreFoto = uniqid('pfp_') . '.' . $extension;
+                $nombreFoto  = 'pfp_' . bin2hex(random_bytes(8)) . '.' . $extension;
                 $rutaDestino = __DIR__ . '/../assets/uploads/img_perfiles/' . $nombreFoto;
                 if(move_uploaded_file($_FILES['fotoPerfil']['tmp_name'], $rutaDestino)){
                     $fotoPerfilData = $nombreFoto;
@@ -376,59 +497,68 @@
             }
 
             $success = $this->userModel->updateUserProfileData(
-                $idUsuario, 
-                $nombres, 
-                $apellidos, 
-                $correo, 
-                $telefono, 
-                $direccionDomicilio, 
-                $codigoPostal,
-                $idDistrito,
-                $fotoPerfilData
+                $idUsuario, $nombres, $apellidos, $correo, $telefono,
+                $direccionDomicilio, $codigoPostal, $idDistrito, $fotoPerfilData
             );
 
             if($success){
-                $_SESSION['nombres'] = $nombres;
+                $_SESSION['nombres']      = $nombres;
                 $_SESSION['emailUsuario'] = $correo;
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=success');
             }else{
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showMisDatos&status=error');
             }
+            exit();
         }
 
         public function changePassword(){
-            iniciarSesion();
-            if(!isset($_SESSION['idUsuario'])){
-                die('No autorizado');
-            }
+            requireLogin();
+            if($_SERVER['REQUEST_METHOD'] !== 'POST'){ die('Método no permitido'); }
+            verificarCsrf();
 
-            $idUsuario = $_SESSION['idUsuario'];
+            $idUsuario       = $_SESSION['idUsuario'];
             $currentPassword = $_POST['currentPassword'] ?? '';
-            $newPassword = $_POST['newPassword'] ?? '';
+            $newPassword     = $_POST['newPassword'] ?? '';
             $confirmPassword = $_POST['confirmPassword'] ?? '';
 
-            if(empty($currentPassword) || empty($newPassword) || empty($confirmPassword)){
+            if($currentPassword === '' || $newPassword === '' || $confirmPassword === ''){
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=empty'); exit();
             }
             if($newPassword !== $confirmPassword){
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=mismatch'); exit();
             }
-            if(strlen($newPassword) < 8){
+            if(!esPasswordValida($newPassword)){
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=short'); exit();
             }
 
+            // Se exige la contraseña actual: sin esto, quien se siente ante una sesión
+            // abierta ajena podría cambiarla y quedarse con la cuenta.
             $usuario = $this->userModel->getUserById($idUsuario);
             if(!$usuario || !password_verify($currentPassword, $usuario['password'])){
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=wrong'); exit();
             }
 
+            // updatePassword invalida además el remember_token en la misma consulta.
             $success = $this->userModel->updatePassword($idUsuario, $newPassword);
             if($success){
+                borrarCookieRecordarme();
+                // Sesión nueva tras cambiar la contraseña: las sesiones anteriores mueren.
+                regenerarSesion();
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=success');
             } else {
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showSeguridad&pass_status=error');
             }
+            exit();
         }
+
+        /* ============================================================
+           RECUPERACIÓN DE CONTRASEÑA (token de un solo uso)
+
+           El método anterior pedía correo + teléfono y cambiaba la contraseña en
+           el acto. No servía: el teléfono se publica en los anuncios, así que los
+           dos "secretos" estaban a la vista y cualquiera podía tomar cualquier
+           cuenta. Ahora se envía un enlace con un token aleatorio que caduca.
+           ============================================================ */
 
         public function showRecuperar(){
             iniciarSesion();
@@ -436,88 +566,141 @@
             require_once __DIR__ . '/../views/auth/recuperar_password.php';
         }
 
-        public function recuperarPassword(){
+        /** Paso 1: el usuario pide el enlace indicando su correo. */
+        public function solicitarReset(){
+            iniciarSesion();
+            verificarCsrf();
+
+            $correo = normalizarCorreo($_POST['emailInput'] ?? '');
+
+            if(!esCorreoValido($correo)){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=email_invalido');
+                exit();
+            }
+
+            $usuario = $this->userModel->getUserByEmail($correo);
+
+            // Se responde SIEMPRE lo mismo, exista o no la cuenta. Si se dijera
+            // "ese correo no está registrado", esta página se convertiría en un
+            // buscador de cuentas válidas. Por eso el destino es fijo: ni siquiera
+            // el modo desarrollo lo cambia, porque una URL distinta ya delataría
+            // que la cuenta existe. El enlace de dev viaja aparte, en la sesión.
+            $destino = BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=enviado';
+
+            if($usuario && ($usuario['estado'] ?? '') === 'Activo'){
+                $tokenPlano = bin2hex(random_bytes(32));
+                $tokenHash  = hash('sha256', $tokenPlano);
+
+                $this->userModel->crearTokenReset($usuario['idUsuario'], $tokenHash, self::RESET_VALIDEZ_MINUTOS);
+
+                $enlace = BASE_URL . 'controllers/AuthController.php?action=showResetForm&token=' . $tokenPlano;
+                $mensaje = "Hola {$usuario['nombres']},\n\n"
+                         . "Recibimos una solicitud para restablecer tu contraseña en Chamba Ya.\n"
+                         . "Abre este enlace (caduca en " . self::RESET_VALIDEZ_MINUTOS . " minutos):\n\n"
+                         . $enlace . "\n\n"
+                         . "Si no fuiste tú, ignora este mensaje: tu contraseña no cambiará.";
+
+                $enviado = enviarEmailNotificacion($usuario['correo'], 'Restablecer tu contraseña - Chamba Ya', $mensaje);
+
+                // XAMPP no envía correos por defecto. En modo desarrollo se muestra el
+                // enlace en pantalla para poder probar el flujo completo.
+                // En producción (modo_dev = false) esto nunca se muestra.
+                if(!$enviado && Database::modoDev()){
+                    $_SESSION['reset_enlace_dev'] = $enlace;
+                }
+            }
+
+            header('Location: ' . $destino);
+            exit();
+        }
+
+        /** Paso 2: se abre el enlace y, si el token vale, se muestra el formulario. */
+        public function showResetForm(){
             iniciarSesion();
 
-            $correo          = trim($_POST['emailInput'] ?? '');
-            $telefono        = trim($_POST['telefonoInput'] ?? '');
+            $token = $_GET['token'] ?? '';
+            $reset = $token !== '' ? $this->userModel->obtenerResetValido(hash('sha256', $token)) : null;
+
+            if(!$reset){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=token_invalido');
+                exit();
+            }
+
+            global $base_path;
+            $tokenReset = $token; // lo usa la vista para reenviarlo en el POST
+            require_once __DIR__ . '/../views/auth/reset_password.php';
+        }
+
+        /** Paso 3: se guarda la nueva contraseña y el token se quema. */
+        public function resetPassword(){
+            iniciarSesion();
+            verificarCsrf();
+
+            $token           = $_POST['token'] ?? '';
             $newPassword     = $_POST['newPassword'] ?? '';
             $confirmPassword = $_POST['confirmPassword'] ?? '';
 
-            if(empty($correo) || empty($telefono) || empty($newPassword) || empty($confirmPassword)){
-                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=empty'); exit();
-            }
+            $volverAlForm = BASE_URL . 'controllers/AuthController.php?action=showResetForm&token=' . urlencode($token);
+
             if($newPassword !== $confirmPassword){
-                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=mismatch'); exit();
+                header('Location: ' . $volverAlForm . '&rec_status=mismatch'); exit();
             }
-            if(strlen($newPassword) < 8){
-                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=short'); exit();
-            }
-
-            // Verifica con correo + telefono (metodo simple, sin email).
-            $usuario = $this->userModel->getUserByEmail($correo);
-            if(!$usuario || trim((string)$usuario['telefono']) !== $telefono){
-                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=not_match'); exit();
+            if(!esPasswordValida($newPassword)){
+                header('Location: ' . $volverAlForm . '&rec_status=short'); exit();
             }
 
-            $success = $this->userModel->updatePassword($usuario['idUsuario'], $newPassword);
-            if($success){
-                header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=pass_reset');
-            } else {
+            // El token se vuelve a validar aquí: que el paso 2 lo aceptara no basta,
+            // pudo caducar entretanto o llegar un POST directo sin pasar por el formulario.
+            $reset = $token !== '' ? $this->userModel->obtenerResetValido(hash('sha256', $token)) : null;
+            if(!$reset){
+                header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=token_invalido');
+                exit();
+            }
+
+            $ok = $this->userModel->updatePassword($reset['idUsuario'], $newPassword);
+            if(!$ok){
                 header('Location: ' . BASE_URL . 'controllers/AuthController.php?action=showRecuperar&rec_status=error');
+                exit();
             }
+
+            // Un enlace de recuperación sirve una sola vez.
+            $this->userModel->marcarResetUsado($reset['idReset']);
+            // Se limpia el bloqueo por intentos: el dueño legítimo recuperó su cuenta.
+            $this->userModel->limpiarIntentosFallidos($reset['correo'], $this->ipCliente());
+            borrarCookieRecordarme();
+
+            header('Location: ' . BASE_URL . 'views/auth/login.php?login_status=pass_reset');
             exit();
         }
     }
 
-    $controller = new AuthController();
+    /* ================== Enrutador ================== */
 
+    $controller = new AuthController();
     $action = $_GET['action'] ?? '';
 
     switch($action){
-        case 'registerFirst':
-            $controller->registerFirst();
-            break;
-        case 'showFormDatos':
-            $controller->showDatosForm();
-            break;
-        case 'login':
-            $controller->login();
-            break;
-        case 'completeRegister':
-            $controller->completeRegister();
-            break;
-        case 'showMisDatos':
-            $controller->showMisDatos();
-            break;
-        case 'showSeguridad':
-            $controller->showSeguridad();
-            break;
-        case 'showPreferencias':
-            $controller->showPreferencias();
-            break;
-        case 'guardarPreferencias':
-            $controller->guardarPreferencias();
-            break;
-        case 'desactivarCuenta':
-            $controller->desactivarCuenta();
-            break;
-        case 'eliminarCuenta':
-            $controller->eliminarCuenta();
-            break;
-        case 'updateMisDatos':
-            $controller->updateMisDatos();
-            break;
-        case 'changePassword':
-            $controller->changePassword();
-            break;
-        case 'showRecuperar':
-            $controller->showRecuperar();
-            break;
-        case 'recuperarPassword':
-            $controller->recuperarPassword();
-            break;
+        case 'registerFirst':       $controller->registerFirst();       break;
+        case 'showFormDatos':       $controller->showDatosForm();       break;
+        case 'login':               $controller->login();               break;
+        case 'completeRegister':    $controller->completeRegister();    break;
+        case 'showMisDatos':        $controller->showMisDatos();        break;
+        case 'showSeguridad':       $controller->showSeguridad();       break;
+        case 'showPreferencias':    $controller->showPreferencias();    break;
+        case 'guardarPreferencias': $controller->guardarPreferencias(); break;
+        case 'desactivarCuenta':    $controller->desactivarCuenta();    break;
+        case 'eliminarCuenta':      $controller->eliminarCuenta();      break;
+        case 'updateMisDatos':      $controller->updateMisDatos();      break;
+        case 'changePassword':      $controller->changePassword();      break;
+        case 'cambiarModo':         $controller->cambiarModo();         break;
+        case 'showRecuperar':       $controller->showRecuperar();       break;
+        case 'solicitarReset':      $controller->solicitarReset();      break;
+        case 'showResetForm':       $controller->showResetForm();       break;
+        case 'resetPassword':       $controller->resetPassword();       break;
+        // Nombre antiguo del flujo inseguro: se redirige al nuevo para no dejar
+        // enlaces rotos en marcadores o correos ya enviados.
+        case 'recuperarPassword':   $controller->solicitarReset();      break;
         default:
+            http_response_code(400);
             die('Acción no válida');
     }
-?>

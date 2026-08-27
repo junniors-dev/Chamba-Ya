@@ -7,6 +7,7 @@
     <details style="margin-top:15px;">
         <summary style="cursor:pointer;color:#dc2626;font-size:.9rem;"><i class="fa-solid fa-flag"></i> Reportar este anuncio</summary>
         <form action="<?= BASE_URL ?>controllers/ReporteController.php" method="POST" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;max-width:420px;">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
             <input type="hidden" name="tipo" value="<?= htmlspecialchars($tipoReporte ?? 'trabajo') ?>">
             <select name="motivo" required style="padding:8px;border:1px solid #cbd5e1;border-radius:6px;">

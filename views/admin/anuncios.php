@@ -54,6 +54,7 @@
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                 </a>
                                 <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=cambiarEstadoAnuncio" style="display:inline;">
+                    <?= campoCsrf() ?>
                                     <input type="hidden" name="idAnuncio" value="<?= (int) $a['idAnuncio'] ?>">
                                     <select name="estado" onchange="this.form.submit()" class="btn-accion" style="cursor:pointer;">
                                         <?php foreach ($estadosAnuncio as $e): ?>
@@ -82,6 +83,7 @@
         <h3>Eliminar anuncio</h3>
         <p>¿Eliminar "<strong id="tituloEliminarAnuncio"></strong>"? Se borrarán sus postulaciones, favoritos y reportes. No se puede deshacer.</p>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=eliminarAnuncio">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idAnuncio" value="">
             <div class="admin-modal-acciones">
                 <button type="button" class="btn-modal cancelar" data-cierra-modal>Cancelar</button>

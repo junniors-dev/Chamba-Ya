@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../models/AnuncioCreadoModel.php';
 require_once __DIR__ . '/../core/config/session.php';
+// Necesario para verificarCsrf(): session.php ya no arrastra config.php,
+// para no formar un ciclo entre ambos archivos.
+require_once __DIR__ . '/../core/security/csrf.php';
 class AnuncioCreadoController {
     private AnuncioCreadoModel $modelo;
 
@@ -175,6 +178,9 @@ if (isset($_GET['ajax'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirSesionAnuncios();
+    // Corta la peticion si no trae un token CSRF valido: impide que otra
+    // web dispare esta accion aprovechando la sesion abierta del usuario.
+    verificarCsrf();
     (new AnuncioCreadoController())->procesarPeticion();
 }
 ?>

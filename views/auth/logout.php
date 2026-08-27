@@ -3,23 +3,20 @@
     require_once __DIR__ . '/../../core/config/session.php';
     iniciarSesion();
 
-    // Invalida el token "recordarme" en la BD y borra la cookie.
+    // Invalida el token "recordarme" en la BD: si no, la cookie seguiría
+    // sirviendo para volver a entrar automáticamente después de cerrar sesión.
     if (isset($_SESSION['idUsuario'])) {
         require_once __DIR__ . '/../../core/db/database.php';
         require_once __DIR__ . '/../../models/userModel.php';
         (new UserModel())->limpiarRememberToken($_SESSION['idUsuario']);
     }
-    if (!empty($_COOKIE['remember_token'])) {
-        setcookie('remember_token', '', time() - 3600, '/');
-    }
 
-    //Eliminar todas las variables de sesión
-    $_SESSION = [];
+    // Borra la cookie con los mismos flags con que se creó (httponly, samesite):
+    // si no coinciden, el navegador puede no llegar a eliminarla.
+    borrarCookieRecordarme();
 
-    //Destruir la sesión
-    session_destroy();
+    // Destruye la sesión por completo, incluida su cookie.
+    cerrarSesion();
 
-    //Redirigir a la pagina de inicio
     header('Location: ' . BASE_URL . 'index.php');
     exit();
-?>

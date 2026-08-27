@@ -232,6 +232,14 @@ class AdminController {
 }
 
 /* ===================== ROUTER ===================== */
+// Toda accion del panel que modifique datos llega por POST: se valida el
+// token CSRF antes de enrutar. Sin esto, una web externa podria hacer que
+// un administrador con sesion abierta ascienda a otro usuario a admin.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireAdmin();
+    verificarCsrf();
+}
+
 $controller = new AdminController();
 $action = $_GET['action'] ?? 'dashboard';
 

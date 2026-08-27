@@ -11,7 +11,7 @@ function toggleFavoritoAnuncio(idAnuncio, boton) {
     fetch(basePath + 'controllers/AnuncioGuardadoController.php', {
         method: 'POST',
         body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN }
     })
         .then(res => res.json())
         .then(data => {
@@ -37,7 +37,7 @@ function toggleFavoritoTrabajador(idTrabajador, boton, idAnuncio) {
     fetch(basePath + 'controllers/TrabajadorFavoritoController.php', {
         method: 'POST',
         body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN }
     })
         .then(res => res.json())
         .then(data => {
@@ -60,7 +60,7 @@ function quitarDeListaAjax(url, campos, tarjeta) {
     fetch(url, {
         method: 'POST',
         body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-Token': CSRF_TOKEN }
     })
         .then(res => res.json())
         .then(data => {

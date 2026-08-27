@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/../models/TrabajadorFavoritoModel.php';
 require_once __DIR__ . '/../core/config/session.php';
+// Necesario para verificarCsrf(): session.php ya no arrastra config.php,
+// para no formar un ciclo entre ambos archivos.
+require_once __DIR__ . '/../core/security/csrf.php';
 
 class TrabajadorFavoritoController {
     private TrabajadorFavoritoModel $modelo;
@@ -66,6 +69,9 @@ class TrabajadorFavoritoController {
 // Pide estar logueado.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     iniciarSesion();
+    // Corta la peticion si no trae un token CSRF valido: impide que otra
+    // web dispare esta accion aprovechando la sesion abierta del usuario.
+    verificarCsrf();
     if (!isset($_SESSION['idUsuario'])) {
         header('Location: ../views/auth/login.php');
         exit();

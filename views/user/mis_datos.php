@@ -6,6 +6,7 @@
     require_once __DIR__ . '/../../assets/css/style.php';
     require_once __DIR__ . '/../../assets/css/styles.php';
     require_once __DIR__ . '/../../assets/css/style_profile.php';
+    require_once __DIR__ . '/../../assets/css/style_portafolio.php';
     require_once __DIR__ . '/../templates/head.php';
     require_once __DIR__ . '/../templates/header.php';
 ?>
@@ -30,21 +31,33 @@
         <!-- Content -->
         <main class="profile-content">
 
-            <?php if(isset($_GET['status']) && $_GET['status'] == 'success'): ?>
-                <div class="alert alert-success">
-                    <i class="fa-solid fa-circle-check"></i> Tus datos han sido actualizados exitosamente.
-                </div>
-            <?php elseif(isset($_GET['status']) && $_GET['status'] == 'habilidades_ok'): ?>
-                <div class="alert alert-success">
-                    <i class="fa-solid fa-circle-check"></i> Tus habilidades fueron actualizadas.
-                </div>
-            <?php elseif(isset($_GET['status']) && $_GET['status'] == 'email_dup'): ?>
-                <div class="alert alert-error">
-                    <i class="fa-solid fa-circle-exclamation"></i> Ese correo ya está en uso por otra cuenta.
-                </div>
-            <?php elseif(isset($_GET['status']) && $_GET['status'] == 'error'): ?>
-                <div class="alert alert-error">
-                    <i class="fa-solid fa-circle-exclamation"></i> Hubo un error al guardar. Inténtalo de nuevo.
+            <?php
+                // Los mensajes van en una tabla y no en una cadena de elseif: el
+                // valor de $_GET solo sirve como clave, así que nunca se imprime
+                // lo que llegue por la URL.
+                $mensajesEstado = [
+                    'success'           => ['success', 'Tus datos han sido actualizados exitosamente.'],
+                    'habilidades_ok'    => ['success', 'Tus habilidades fueron actualizadas.'],
+                    'port_guardado'     => ['success', 'Trabajo añadido a tu portafolio.'],
+                    'port_eliminado'    => ['success', 'Trabajo quitado del portafolio.'],
+                    'email_dup'         => ['error',   'Ese correo ya está en uso por otra cuenta.'],
+                    'email_invalido'    => ['error',   'Escribe un correo válido.'],
+                    'telefono'          => ['error',   'El teléfono debe tener 9 dígitos.'],
+                    'campos'            => ['error',   'Nombres y apellidos son obligatorios.'],
+                    'port_titulo'       => ['error',   'El trabajo necesita un título.'],
+                    'port_imagen'       => ['error',   'Imagen no válida. Debe ser JPG, PNG o WEBP y pesar menos de 2 MB.'],
+                    'port_limite'       => ['error',   'Llegaste al máximo de trabajos en el portafolio.'],
+                    'port_no_autorizado'=> ['error',   'Ese trabajo no es tuyo.'],
+                    'port_error'        => ['error',   'No se pudo guardar el trabajo. Inténtalo de nuevo.'],
+                    'error'             => ['error',   'Hubo un error al guardar. Inténtalo de nuevo.'],
+                ];
+                $estadoActual = $_GET['status'] ?? '';
+            ?>
+            <?php if (isset($mensajesEstado[$estadoActual])):
+                [$tipoAlerta, $textoAlerta] = $mensajesEstado[$estadoActual]; ?>
+                <div class="alert alert-<?= $tipoAlerta ?>">
+                    <i class="fa-solid fa-<?= $tipoAlerta === 'success' ? 'circle-check' : 'circle-exclamation' ?>"></i>
+                    <?= htmlspecialchars($textoAlerta) ?>
                 </div>
             <?php endif; ?>
 
@@ -114,6 +127,7 @@
             </style>
 
             <form action="<?= BASE_URL ?>controllers/AuthController.php?action=updateMisDatos" method="POST" enctype="multipart/form-data" id="profileForm">
+                    <?= campoCsrf() ?>
 
                 <!-- Card: Datos Personales -->
                 <div class="profile-card">
@@ -271,6 +285,7 @@
                     </div>
                 </div>
                 <form action="<?= BASE_URL ?>controllers/HabilidadController.php" method="POST">
+                    <?= campoCsrf() ?>
                     <div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;">
                         <?php foreach(($habilidades ?? []) as $h): ?>
                             <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:20px;cursor:pointer;">
@@ -284,6 +299,96 @@
                         <button type="submit" class="btn-save"><i class="fa-solid fa-floppy-disk"></i> Guardar Habilidades</button>
                     </div>
                 </form>
+            </div>
+
+            <!-- Card: Portafolio de trabajos anteriores -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <div class="card-icon personal"><i class="fa-solid fa-images"></i></div>
+                    <div>
+                        <h2>Mi Portafolio</h2>
+                        <span>Muestra trabajos que ya hiciste. Es lo que más convence a quien te va a contratar.</span>
+                    </div>
+                </div>
+
+                <?php if (!empty($portafolio)): ?>
+                    <div class="portafolio-grid">
+                        <?php foreach ($portafolio as $trabajo): ?>
+                            <div class="portafolio-item">
+                                <?php if (!empty($trabajo['imagen'])): ?>
+                                    <img src="<?= BASE_URL ?>assets/uploads/portafolio/<?= htmlspecialchars($trabajo['imagen']) ?>"
+                                         alt="<?= htmlspecialchars($trabajo['titulo']) ?>" loading="lazy">
+                                <?php else: ?>
+                                    <div class="portafolio-sinimg"><i class="fa-regular fa-image"></i></div>
+                                <?php endif; ?>
+                                <div class="portafolio-cuerpo">
+                                    <h4><?= htmlspecialchars($trabajo['titulo']) ?></h4>
+                                    <?php if (!empty($trabajo['descripcion'])): ?>
+                                        <p><?= nl2br(htmlspecialchars($trabajo['descripcion'])) ?></p>
+                                    <?php endif; ?>
+                                    <?php if (!empty($trabajo['categoria'])): ?>
+                                        <span class="portafolio-cat"><?= htmlspecialchars($trabajo['categoria']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="portafolio-pie">
+                                    <form method="POST" action="<?= BASE_URL ?>controllers/PortafolioController.php"
+                                          onsubmit="return confirm('¿Quitar este trabajo de tu portafolio?');">
+                                        <?= campoCsrf() ?>
+                                        <input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="idPortafolio" value="<?= (int) $trabajo['idPortafolio'] ?>">
+                                        <button type="submit" class="portafolio-eliminar">
+                                            <i class="fa-regular fa-trash-can"></i> Quitar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="portafolio-vacio">
+                        Aún no has añadido ningún trabajo. Sube el primero y tu perfil se verá mucho más sólido.
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($portafolioLleno)): ?>
+                    <p style="margin-top:14px;color:#d97706;font-size:13px;">
+                        Llegaste al máximo de <?= (int) PortafolioModel::MAX_POR_USUARIO ?> trabajos.
+                        Quita alguno si quieres añadir otro.
+                    </p>
+                <?php else: ?>
+                    <form action="<?= BASE_URL ?>controllers/PortafolioController.php" method="POST"
+                          enctype="multipart/form-data" style="margin-top:18px;">
+                        <?= campoCsrf() ?>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="portTitulo">Título del trabajo</label>
+                                <input type="text" id="portTitulo" name="titulo" maxlength="120" required
+                                       placeholder="Ej. Instalación eléctrica en departamento">
+                            </div>
+                            <div class="form-group">
+                                <label for="portCategoria">Categoría</label>
+                                <select id="portCategoria" name="idCategoria">
+                                    <option value="">Sin categoría</option>
+                                    <?php foreach (($categoriasPort ?? []) as $cat): ?>
+                                        <option value="<?= (int) $cat['idCategoria'] ?>"><?= htmlspecialchars($cat['nombre']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="portDescripcion">¿Qué hiciste?</label>
+                            <textarea id="portDescripcion" name="descripcion" rows="3" maxlength="1000"
+                                      placeholder="Cuenta brevemente en qué consistió el trabajo."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="portImagen">Foto (opcional, máx. 2 MB — JPG, PNG o WEBP)</label>
+                            <input type="file" id="portImagen" name="imagen" accept="image/jpeg,image/png,image/webp">
+                        </div>
+                        <div class="form-actions" style="margin-top:14px;">
+                            <button type="submit" class="btn-save"><i class="fa-solid fa-plus"></i> Añadir al portafolio</button>
+                        </div>
+                    </form>
+                <?php endif; ?>
             </div>
 
         </main>

@@ -62,12 +62,17 @@ class AnuncioModel {
             }
 
             // BUSCADOR
+            // Se usan dos placeholders distintos (:searchTitulo y :searchDesc) en vez
+            // de repetir :search: con las consultas preparadas reales (sin emulación)
+            // MySQL no admite el mismo nombre de parámetro dos veces en la sentencia.
             if (!empty($filtros['search'])) {
                 $sql .= " AND (
-                LOWER(a.titulo) LIKE LOWER(:search)
-                OR LOWER(a.descripcion) LIKE LOWER(:search)
+                LOWER(a.titulo) LIKE LOWER(:searchTitulo)
+                OR LOWER(a.descripcion) LIKE LOWER(:searchDesc)
                 )";
-                $params[':search'] = '%' . trim($filtros['search']) . '%';
+                $termino = '%' . trim($filtros['search']) . '%';
+                $params[':searchTitulo'] = $termino;
+                $params[':searchDesc']   = $termino;
             }
             
             // CATEGORÍA

@@ -11,6 +11,7 @@ if (!empty($_GET['estado'])):
         'calificado'   => ['¡Gracias! Tu calificación fue registrada.',  '#16a34a'],
         'cal_invalida' => ['Selecciona una puntuación de 1 a 5 estrellas.', '#d97706'],
         'cal_propia'   => ['No puedes calificarte a ti mismo.',          '#d97706'],
+        'cal_sin_trabajo' => ['Solo puedes calificar a alguien con quien completaste un trabajo.', '#d97706'],
         'trab_guardado'=> ['Trabajador agregado a tus guardados.',       '#16a34a'],
         'trab_quitado' => ['Trabajador quitado de tus guardados.',       '#64748b'],
         'trab_propio'  => ['No puedes guardarte a ti mismo.',            '#d97706'],

@@ -55,6 +55,7 @@
                                         <i class="fa-solid fa-check"></i> Resolver
                                     </button>
                                     <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=descartarReporte" style="display:inline;">
+                    <?= campoCsrf() ?>
                                         <input type="hidden" name="idReporte" value="<?= (int) $r['idReporte'] ?>">
                                         <button class="btn-accion" type="submit"><i class="fa-solid fa-xmark"></i></button>
                                     </form>
@@ -94,6 +95,7 @@
         <h3>Resolver reporte</h3>
         <p>Marca este reporte como revisado. Puedes dejar una nota interna.</p>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=resolverReporte">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idReporte" value="">
             <label>Nota (opcional)</label>
             <textarea name="notas" rows="3" placeholder="Ej: Contenido verificado, sin infracción."></textarea>
@@ -111,6 +113,7 @@
         <h3>Eliminar anuncio reportado</h3>
         <p>Se eliminará el anuncio y todos sus datos asociados, y el reporte quedará cerrado. Esta acción no se puede deshacer.</p>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=eliminarAnuncioReportado">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idReporte" value="">
             <div class="admin-modal-acciones">
                 <button type="button" class="btn-modal cancelar" data-cierra-modal>Cancelar</button>

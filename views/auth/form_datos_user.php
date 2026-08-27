@@ -31,6 +31,7 @@
         </p>
     <?php endif; ?>
     <form action="<?= BASE_URL ?>controllers/AuthController.php?action=completeRegister" method="POST" enctype="multipart/form-data">
+                    <?= campoCsrf() ?>
         <!-- FOTO + DESCRIPCIÓN -->
         <div class="profile-section">
             <div class="profile-picture">

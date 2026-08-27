@@ -112,6 +112,7 @@ require_once __DIR__ . '/../templates/header.php';
                 </div>
 
                 <form action="<?= BASE_URL ?>controllers/PostulacionController.php" method="POST">
+                    <?= campoCsrf() ?>
                     <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
                     <button class="btn-solicitar-servicio" id="btn-solicitar-service" type="submit">Contratar Servicio</button>
                 </form>
@@ -172,6 +173,7 @@ require_once __DIR__ . '/../templates/header.php';
                 <p id="form-calificar" style="color:#64748b;">No puedes calificarte a ti mismo.</p>
             <?php else: ?>
                 <form id="form-calificar" class="form-calificar" action="<?= BASE_URL ?>controllers/CalificacionController.php" method="POST">
+                    <?= campoCsrf() ?>
                     <input type="hidden" name="idUsuarioCalificado" value="<?= (int) $anuncio['idUsuario'] ?>">
                     <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
                     <strong>Deja tu opinión</strong>

@@ -120,5 +120,61 @@ class PostulacionModel {
             return false;
         }
     }
+
+    /**
+     * Cierra un trabajo: solo el dueno del anuncio puede darlo por completado, y
+     * solo si antes lo habia aceptado. Sin esa condicion se podria saltar el
+     * flujo y marcar como completada una postulacion recien llegada.
+     */
+    public function marcarCompletada($idPostulacion, $idDueno): bool {
+        try {
+            $stmt = $this->conn->prepare("
+                UPDATE postulacion
+                SET estado = 'Completado', fechaCompletado = NOW()
+                WHERE idPostulacion = ?
+                  AND estado = 'Aceptado'
+                  AND idAnuncio IN (SELECT idAnuncio FROM anuncio WHERE idUsuario = ?)
+            ");
+            $stmt->execute([$idPostulacion, $idDueno]);
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            error_log("Error al marcar postulacion completada: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Devuelve la postulacion completada que une a dos personas, o null.
+     *
+     * Es la puerta que habilita las calificaciones: antes cualquier usuario podia
+     * calificar a cualquier otro sin haber trabajado nunca con el, lo que dejaba
+     * la puerta abierta a resenas falsas. Se acepta en los dos sentidos porque
+     * ambas partes pueden calificarse: quien publico el anuncio y quien lo hizo.
+     */
+    public function trabajoCompletadoEntre(int $idA, int $idB): ?array {
+        try {
+            $sql = "SELECT p.idPostulacion, p.idAnuncio
+                    FROM postulacion p
+                    INNER JOIN anuncio a ON p.idAnuncio = a.idAnuncio
+                    WHERE p.estado = 'Completado'
+                      AND (
+                            (a.idUsuario = :a1 AND p.idUsuario = :b1)
+                         OR (a.idUsuario = :b2 AND p.idUsuario = :a2)
+                          )
+                    ORDER BY p.fechaCompletado DESC
+                    LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bindValue(':a1', $idA, PDO::PARAM_INT);
+            $stmt->bindValue(':a2', $idA, PDO::PARAM_INT);
+            $stmt->bindValue(':b1', $idB, PDO::PARAM_INT);
+            $stmt->bindValue(':b2', $idB, PDO::PARAM_INT);
+            $stmt->execute();
+            $r = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $r ?: null;
+        } catch (Exception $e) {
+            error_log("Error en trabajoCompletadoEntre: " . $e->getMessage());
+            return null;
+        }
+    }
 }
 ?>

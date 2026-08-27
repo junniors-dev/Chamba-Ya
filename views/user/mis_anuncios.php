@@ -90,6 +90,7 @@
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <form action="<?= BASE_URL ?>controllers/AnuncioCreadoController.php" method="POST" class="form-eliminar">
+                    <?= campoCsrf() ?>
                                         <input type="hidden" name="id" value="<?php echo $anuncio['id']; ?>">
                                         <input type="hidden" name="accion" value="eliminar">
                                         <button class="boton-accion" type="submit" onclick="return confirm('¿Estás seguro de que quieres eliminar este anuncio?');">
@@ -112,6 +113,7 @@
         <span class="cerrar-modal" onclick="cerrarModal('modal-crear')">&times;</span>
         <h3>Publicar Nueva Chamba</h3>
         <form id="formulario-anuncio" action="<?= BASE_URL ?>controllers/AnuncioCreadoController.php" method="POST">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="id" id="form-id-anuncio">
             <div class="grupo-formulario">
                 <label>Título del Anuncio</label>

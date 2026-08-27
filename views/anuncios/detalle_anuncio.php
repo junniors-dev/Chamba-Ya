@@ -83,6 +83,7 @@
                     <!-- Botonera Inferior -->
                     <div class="bloque-acciones">
                         <form action="<?= BASE_URL ?>controllers/PostulacionController.php" method="POST" style="display:inline;">
+                    <?= campoCsrf() ?>
                             <input type="hidden" name="idAnuncio" value="<?= (int) $anuncio['idAnuncio'] ?>">
                             <button class="btn-postular" type="submit">Contactar / Postularse</button>
                         </form>
