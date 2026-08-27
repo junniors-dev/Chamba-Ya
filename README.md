@@ -277,9 +277,7 @@ Es mío, íntegramente y sin ayuda de nadie, todo lo descrito en la sección de
 - Modo activo, portafolio de trabajos y el ciclo de trabajo con estado *Completado*
 - Reseñas verificables, ligadas a un trabajo realmente completado
 
-De la etapa inicial en equipo (junio – julio de 2026) también participaron
-[enzoliba](https://github.com/enzoliba) y EstefanyAt. El reparto exacto de aquella
-fase está en el historial (`git shortlog -sn`).
+El detalle de la etapa inicial está en el historial del repositorio.
 
 ---
 
