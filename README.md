@@ -262,8 +262,25 @@ Esto es un proyecto de portafolio y corre en XAMPP. Antes de exponerlo a interne
 
 ## 👥 Autoría
 
-Proyecto desarrollado por **[junniors-dev](https://github.com/junniors-dev)**,
-con contribuciones de [enzoliba](https://github.com/enzoliba).
+Chamba Ya es un **proyecto en equipo**. La plataforma (anuncios, postulaciones,
+búsqueda, favoritos, notificaciones, panel de administración y toda la interfaz)
+se construyó entre tres personas:
+
+| | |
+|---|---|
+| [**junniors-dev**](https://github.com/junniors-dev) | Junni Díaz |
+| [**enzoliba**](https://github.com/enzoliba) | Enzo Linares Barboza |
+| **EstefanyAt** | Estefany Terrones |
+
+El reparto real del trabajo está en el historial del repositorio
+(`git shortlog -sn`), que es la fuente fiable.
+
+La **auditoría de seguridad y las funcionalidades documentadas más arriba**
+(protección CSRF, endurecimiento de sesiones, recuperación por token, bloqueo
+persistente de intentos, modo activo, portafolio y ciclo de trabajo completo)
+corresponden a una fase posterior realizada por
+[junniors-dev](https://github.com/junniors-dev), y son identificables en los
+commits de la rama `seguridad`.
 
 ---
 
