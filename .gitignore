@@ -12,6 +12,7 @@ assets/uploads/portafolio/*
 !database/schema.sql
 !database/seed.sql
 !database/migracion_seguridad.sql
+!database/migracion_funcionalidades.sql
 
 # Sistema operativo / editores
 Thumbs.db
