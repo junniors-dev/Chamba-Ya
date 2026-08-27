@@ -100,35 +100,36 @@ mysql -u root bd_chamba_ya < database/migracion_funcionalidades.sql
 
 ## Seguridad
 
-El proyecto pasó por una auditoría de autenticación, sesiones y control de acceso:
-**14 vulnerabilidades encontradas y corregidas**, clasificadas según CWE y OWASP Top 10.
+Auditoría de autenticación, gestión de sesiones y control de acceso. Se identificaron
+**14 hallazgos**, clasificados según CWE y OWASP Top 10 (2021), todos remediados.
 
-**El hallazgo crítico:** recuperar la contraseña solo pedía correo y teléfono. El problema
-no era el código sino la premisa — *el teléfono se publica en los propios anuncios*, junto
-al botón de WhatsApp. Los dos factores estaban a la vista en la misma web, sin límite de
-intentos: cualquiera podía tomar cualquier cuenta. Se reemplazó por un enlace con token de
-un solo uso, hasheado en base de datos y con caducidad de 30 minutos.
+**Hallazgo principal.** El restablecimiento de contraseña se validaba con la combinación de
+correo y teléfono. La debilidad no residía en la implementación sino en la premisa: *el
+número de teléfono se publica en los propios anuncios*, junto al enlace de contacto por
+WhatsApp. Ambos factores eran públicos dentro de la misma aplicación y no existía límite de
+intentos, lo que permitía tomar el control de cualquier cuenta. Se sustituyó por un enlace
+con token de un solo uso, almacenado como hash y con caducidad de 30 minutos.
 
-Los otros trece hallazgos, por severidad:
+Distribución de los hallazgos restantes:
 
-| | Corregido |
-|---|---|
+| Severidad | Hallazgos |
+|:---|:---|
 | **Crítica** | Ausencia de protección CSRF · Fijación de sesión |
-| **Alta** | Cookie de sesión sin `httponly`/`samesite` · Bloqueo de intentos evadible borrando la cookie · Enumeración de usuarios |
-| **Media** | Token de "recordarme" sin rotar · Desactivación de cuenta reversible sola · Borrado de cuenta sin contraseña · Reseñas sin trabajo previo · Sin validación en servidor · Redirección abierta · Credenciales en el código · Datos personales en el repositorio |
+| **Alta** | Cookie de sesión sin atributos de seguridad · Limitación de intentos aplicada en el cliente · Enumeración de usuarios |
+| **Media** | Token persistente sin rotación · Desactivación de cuenta reversible · Eliminación de cuenta sin reautenticación · Calificaciones sin relación verificable · Validación de entrada ausente en el servidor · Redirección abierta · Credenciales embebidas · Datos personales expuestos en el repositorio |
 
-Cada corrección se verificó ejecutando la aplicación contra la base de datos real, no solo
-leyendo el código. Eso destapó además cuatro defectos que la inspección estática no
-mostraba, entre ellos que el buscador se rompía con consultas preparadas nativas y que PHP
-y MySQL iban con 7 horas de diferencia, lo que hacía que un enlace de 30 minutos durase
-siete horas y media.
+La verificación se realizó ejecutando la aplicación contra la base de datos, no únicamente
+por inspección estática. El proceso reveló además cuatro defectos preexistentes, entre
+ellos la ruptura del buscador con sentencias preparadas nativas y un desfase de zona
+horaria entre PHP y MySQL que extendía a siete horas y media la validez de un enlace
+previsto para treinta minutos.
 
 <details>
-<summary><b>Detalle completo de los 14 hallazgos</b></summary>
+<summary><b>Registro completo de hallazgos</b></summary>
 
 <br/>
 
-| ID | Sev. | Hallazgo | Clasificación | Corrección |
+| ID | Severidad | Hallazgo | Clasificación | Remediación |
 |:---|:---|:---|:---|:---|
 | CY-01 | Crítica | Restablecimiento de contraseña basado en datos públicos | CWE-640 · A07 | Token de un solo uso, hasheado, con caducidad |
 | CY-02 | Crítica | Ausencia de protección CSRF, incluida la elevación a administrador | CWE-352 · A01 | Token por sesión con `hash_equals()` en formularios, controladores y AJAX |
@@ -145,11 +146,11 @@ siete horas y media.
 | CY-13 | Media | Credenciales embebidas y divulgación de errores | CWE-798 · CWE-209 · A05 | `env.php` fuera del repositorio; errores solo al log |
 | CY-14 | Media | Datos personales en el repositorio público | CWE-538 · A01 | `schema.sql` y `seed.sql` con datos sintéticos |
 
-**Ya era correcto antes de la auditoría:** contraseñas con `password_hash()`, PDO preparado
+**Controles conformes previos a la auditoría:** contraseñas con `password_hash()`, PDO preparado
 en los 13 modelos, salida escapada, control de propiedad de recursos y validación de
 archivos subidos por tipo MIME real.
 
-**Pendiente para producción:** HTTPS, un SMTP real, mover `assets/uploads/` fuera de la
+**Recomendaciones para despliegue en producción:** HTTPS, un SMTP real, mover `assets/uploads/` fuera de la
 raíz web, cabeceras CSP y un usuario de MySQL con privilegios mínimos.
 
 </details>
