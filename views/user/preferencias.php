@@ -34,6 +34,7 @@
             <?php endif; ?>
 
             <form method="POST" action="<?= BASE_URL ?>controllers/AuthController.php?action=guardarPreferencias">
+                    <?= campoCsrf() ?>
 
             <!-- Card: Notificaciones -->
             <div class="profile-card">

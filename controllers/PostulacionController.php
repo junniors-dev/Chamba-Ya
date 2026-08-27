@@ -95,6 +95,9 @@ class PostulacionController {
 // Pide estar logueado.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     iniciarSesion();
+    // Corta la peticion si no trae un token CSRF valido: impide que otra
+    // web dispare esta accion aprovechando la sesion abierta del usuario.
+    verificarCsrf();
     if (!isset($_SESSION['idUsuario'])) {
         header('Location: ../views/auth/login.php');
         exit();

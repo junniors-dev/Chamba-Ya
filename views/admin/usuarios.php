@@ -65,6 +65,7 @@
                                 <?php if ((int) $u['idUsuario'] !== $idAdminActual): ?>
                                     <!-- Cambiar estado (los 4 valores reales) -->
                                     <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=cambiarEstadoUsuario" style="display:inline;">
+                    <?= campoCsrf() ?>
                                         <input type="hidden" name="idUsuario" value="<?= (int) $u['idUsuario'] ?>">
                                         <select name="estado" onchange="this.form.submit()" class="btn-accion" style="cursor:pointer;">
                                             <?php foreach ($estadosUsuario as $e): ?>
@@ -74,6 +75,7 @@
                                     </form>
                                     <!-- Promover / quitar admin -->
                                     <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=cambiarRol" style="display:inline;">
+                    <?= campoCsrf() ?>
                                         <input type="hidden" name="idUsuario" value="<?= (int) $u['idUsuario'] ?>">
                                         <input type="hidden" name="rol" value="<?= $u['rol'] === 'admin' ? 'usuario' : 'admin' ?>">
                                         <button class="btn-accion" type="submit" title="<?= $u['rol'] === 'admin' ? 'Quitar admin' : 'Hacer admin' ?>">
@@ -111,6 +113,7 @@
         <h3>Eliminar usuario</h3>
         <p>¿Seguro que deseas eliminar a <strong id="nombreEliminarUsuario"></strong>? Se borrarán sus anuncios, postulaciones y datos. Esta acción no se puede deshacer.</p>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=eliminarUsuario">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idUsuario" value="">
             <div class="admin-modal-acciones">
                 <button type="button" class="btn-modal cancelar" data-cierra-modal>Cancelar</button>

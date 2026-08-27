@@ -55,6 +55,7 @@
                 </div>
 
                 <form action="<?= BASE_URL?>controllers/AuthController.php?action=changePassword" method="POST">
+                    <?= campoCsrf() ?>
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label for="currentPassword">Contraseña Actual</label>
@@ -122,8 +123,14 @@
             </div>
 
             <!-- Formularios reales de las acciones de cuenta -->
-            <form id="formDesactivar" action="<?= BASE_URL?>controllers/AuthController.php?action=desactivarCuenta" method="POST"></form>
-            <form id="formEliminar" action="<?= BASE_URL?>controllers/AuthController.php?action=eliminarCuenta" method="POST"></form>
+            <form id="formDesactivar" action="<?= BASE_URL?>controllers/AuthController.php?action=desactivarCuenta" method="POST">
+                    <?= campoCsrf() ?></form>
+            <form id="formEliminar" action="<?= BASE_URL?>controllers/AuthController.php?action=eliminarCuenta" method="POST">
+                    <?= campoCsrf() ?>
+                    <!-- Borrar la cuenta es irreversible: el servidor exige la contraseña
+                         actual, así un enlace malicioso no puede provocarlo con un clic. -->
+                    <input type="hidden" name="passwordConfirmacion" id="passwordConfirmacionHidden">
+            </form>
 
             <!-- Modal de confirmación -->
             <div id="dangerModal" class="modal-overlay" style="display:none;">
@@ -131,6 +138,18 @@
                     <div class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     <h3 id="modalTitle">¿Estás seguro?</h3>
                     <p id="modalText">Esta acción no se puede deshacer.</p>
+                    <!-- Solo se muestra al eliminar la cuenta -->
+                    <div id="modalPasswordWrap" style="display:none;margin:14px 0;text-align:left;">
+                        <label for="modalPassword" style="display:block;font-size:.9rem;margin-bottom:6px;">
+                            Confirma tu contraseña para continuar
+                        </label>
+                        <input type="password" id="modalPassword" autocomplete="current-password"
+                               placeholder="Tu contraseña actual"
+                               style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;">
+                        <p id="modalPasswordError" style="display:none;color:#dc2626;font-size:.85rem;margin-top:6px;">
+                            Escribe tu contraseña para poder eliminar la cuenta.
+                        </p>
+                    </div>
                     <div class="modal-actions">
                         <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
                         <button id="modalConfirmBtn" class="btn-danger">Confirmar</button>
@@ -186,17 +205,23 @@
         const modal = document.getElementById('dangerModal');
         const title = document.getElementById('modalTitle');
         const text = document.getElementById('modalText');
+        const pwdWrap = document.getElementById('modalPasswordWrap');
         if(tipo === 'desactivar') {
             title.textContent = '¿Desactivar tu cuenta?';
             text.textContent = 'Tu perfil dejará de aparecer en búsquedas. Puedes reactivarla iniciando sesión en cualquier momento.';
+            pwdWrap.style.display = 'none';
         } else {
             title.textContent = '¿Eliminar tu cuenta definitivamente?';
             text.textContent = 'Se borrarán todos tus datos, anuncios y postulaciones. Esta acción NO se puede deshacer.';
+            pwdWrap.style.display = 'block';
         }
         modal.style.display = 'flex';
     }
     function cerrarModal() {
         document.getElementById('dangerModal').style.display = 'none';
+        // No dejar la contraseña escrita en el DOM tras cerrar el modal.
+        document.getElementById('modalPassword').value = '';
+        document.getElementById('modalPasswordError').style.display = 'none';
     }
     // Cerrar al hacer clic fuera del modal
     document.getElementById('dangerModal').addEventListener('click', function(e) {
@@ -208,6 +233,14 @@
         if (accionPendiente === 'desactivar') {
             document.getElementById('formDesactivar').submit();
         } else if (accionPendiente === 'eliminar') {
+            const pwd = document.getElementById('modalPassword').value;
+            // Comprobación en el navegador solo para avisar antes de enviar:
+            // la verificación real de la contraseña la hace el servidor.
+            if (!pwd) {
+                document.getElementById('modalPasswordError').style.display = 'block';
+                return;
+            }
+            document.getElementById('passwordConfirmacionHidden').value = pwd;
             document.getElementById('formEliminar').submit();
         }
     });

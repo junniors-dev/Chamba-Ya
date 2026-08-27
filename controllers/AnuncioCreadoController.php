@@ -175,6 +175,9 @@ if (isset($_GET['ajax'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirSesionAnuncios();
+    // Corta la peticion si no trae un token CSRF valido: impide que otra
+    // web dispare esta accion aprovechando la sesion abierta del usuario.
+    verificarCsrf();
     (new AnuncioCreadoController())->procesarPeticion();
 }
 ?>

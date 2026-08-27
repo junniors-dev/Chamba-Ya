@@ -1,8 +1,14 @@
 <?php
     require_once __DIR__ . '/../../core/config/config.php';
-    require_once '../../assets/css/style.php';
-    require_once '../../assets/css/styles.php';
-    require_once '../../assets/css/style_lr.php';
+    require_once __DIR__ . '/../../core/db/database.php';
+    require_once __DIR__ . '/../../assets/css/style.php';
+    require_once __DIR__ . '/../../assets/css/styles.php';
+    require_once __DIR__ . '/../../assets/css/style_lr.php';
+
+    // Enlace mostrado solo en modo desarrollo (XAMPP no envía correos).
+    // Se lee una vez y se borra, para que no quede en la sesión.
+    $enlaceDev = $_SESSION['reset_enlace_dev'] ?? null;
+    unset($_SESSION['reset_enlace_dev']);
 ?>
 <head>
     <meta charset="UTF-8">
@@ -14,45 +20,47 @@
 <body>
     <div class="container" style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
         <div class="form_box" style="position:relative;width:100%;max-width:420px;padding:30px;">
-            <form action="<?= BASE_URL ?>controllers/AuthController.php?action=recuperarPassword" method="POST">
+            <form action="<?= BASE_URL ?>controllers/AuthController.php?action=solicitarReset" method="POST">
+                <?= campoCsrf() ?>
                 <h1>Recuperar contraseña</h1>
 
                 <?php if(isset($_GET['rec_status'])): ?>
                     <?php
                         $recMsgs = [
-                            'empty'     => 'Completa todos los campos.',
-                            'mismatch'  => 'Las contraseñas no coinciden.',
-                            'short'     => 'La contraseña debe tener al menos 8 caracteres.',
-                            'not_match' => 'El correo y el teléfono no coinciden con ninguna cuenta.',
-                            'error'     => 'No se pudo actualizar la contraseña.',
+                            // Mensaje deliberadamente idéntico exista o no la cuenta:
+                            // decir "ese correo no está registrado" convertiría esta
+                            // página en un buscador de cuentas válidas.
+                            'enviado'        => ['ok',    'Si el correo corresponde a una cuenta, te enviamos un enlace para restablecer la contraseña. Revisa tu bandeja de entrada.'],
+                            'email_invalido' => ['error', 'Escribe un correo válido.'],
+                            'token_invalido' => ['error', 'El enlace no es válido o ya caducó. Solicita uno nuevo.'],
+                            'error'          => ['error', 'No se pudo procesar la solicitud. Inténtalo de nuevo.'],
                         ];
-                        $msg = $recMsgs[$_GET['rec_status']] ?? 'Ocurrió un error.';
+                        [$tipo, $msg] = $recMsgs[$_GET['rec_status']] ?? ['error', 'Ocurrió un error.'];
+                        $color = $tipo === 'ok' ? '#16a34a' : '#dc2626';
                     ?>
-                    <p class="form_msg form_msg_error" style="color:#dc2626;"><?= htmlspecialchars($msg) ?></p>
+                    <p class="form_msg" style="color:<?= $color ?>;"><?= htmlspecialchars($msg) ?></p>
+                <?php endif; ?>
+
+                <?php if($enlaceDev): ?>
+                    <!-- Solo aparece con modo_dev = true en core/config/env.php.
+                         En producción el enlace únicamente viaja por correo. -->
+                    <div style="background:#fef9c3;border:1px solid #facc15;border-radius:8px;padding:12px;margin-bottom:14px;font-size:.85rem;word-break:break-all;">
+                        <strong>Modo desarrollo:</strong> XAMPP no envía correos, así que aquí tienes el enlace.<br>
+                        <a href="<?= htmlspecialchars($enlaceDev) ?>"><?= htmlspecialchars($enlaceDev) ?></a>
+                    </div>
                 <?php endif; ?>
 
                 <p style="font-size:.9rem;color:#555;margin-bottom:10px;">
-                    Para verificar tu identidad, ingresa el <strong>correo</strong> y el <strong>teléfono</strong> con los que te registraste.
+                    Escribe el <strong>correo</strong> con el que te registraste y te enviaremos
+                    un enlace para crear una contraseña nueva. El enlace caduca en 30 minutos.
                 </p>
 
                 <div class="input_box">
-                    <input type="email" placeholder="Correo registrado" required name="emailInput">
+                    <input type="email" placeholder="Correo registrado" required name="emailInput" maxlength="80">
                     <i class='bx bxs-envelope'></i>
                 </div>
-                <div class="input_box">
-                    <input type="text" placeholder="Teléfono registrado" required name="telefonoInput">
-                    <i class='bx bxs-phone'></i>
-                </div>
-                <div class="input_box">
-                    <input type="password" placeholder="Nueva contraseña" required name="newPassword" minlength="8">
-                    <i class='bx bxs-lock-alt'></i>
-                </div>
-                <div class="input_box">
-                    <input type="password" placeholder="Confirmar nueva contraseña" required name="confirmPassword" minlength="8">
-                    <i class='bx bxs-lock-alt'></i>
-                </div>
 
-                <button type="submit" class="btn_link">Actualizar contraseña</button>
+                <button type="submit" class="btn_link">Enviar enlace</button>
                 <p style="margin-top:14px;text-align:center;">
                     <a href="<?= BASE_URL ?>views/auth/login.php">Volver a iniciar sesión</a>
                 </p>

@@ -114,6 +114,7 @@
             </style>
 
             <form action="<?= BASE_URL ?>controllers/AuthController.php?action=updateMisDatos" method="POST" enctype="multipart/form-data" id="profileForm">
+                    <?= campoCsrf() ?>
 
                 <!-- Card: Datos Personales -->
                 <div class="profile-card">
@@ -271,6 +272,7 @@
                     </div>
                 </div>
                 <form action="<?= BASE_URL ?>controllers/HabilidadController.php" method="POST">
+                    <?= campoCsrf() ?>
                     <div style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0;">
                         <?php foreach(($habilidades ?? []) as $h): ?>
                             <label style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:20px;cursor:pointer;">

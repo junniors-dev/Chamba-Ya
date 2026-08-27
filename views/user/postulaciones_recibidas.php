@@ -86,12 +86,14 @@
                                 <div class="acciones-tarjeta">
                                     <?php if ($p['estado'] === 'Pendiente'): ?>
                                         <form action="<?= BASE_URL ?>controllers/PostulacionController.php" method="POST" style="display:inline;">
+                    <?= campoCsrf() ?>
                                             <input type="hidden" name="accion" value="gestionar">
                                             <input type="hidden" name="decision" value="aceptar">
                                             <input type="hidden" name="idPostulacion" value="<?= (int) $p['idPostulacion'] ?>">
                                             <button class="boton-accion" type="submit" title="Aceptar"><i class="fas fa-check"></i> Aceptar</button>
                                         </form>
                                         <form action="<?= BASE_URL ?>controllers/PostulacionController.php" method="POST" style="display:inline;">
+                    <?= campoCsrf() ?>
                                             <input type="hidden" name="accion" value="gestionar">
                                             <input type="hidden" name="decision" value="rechazar">
                                             <input type="hidden" name="idPostulacion" value="<?= (int) $p['idPostulacion'] ?>">

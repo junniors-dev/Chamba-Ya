@@ -25,7 +25,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 yaMarcado = true;
                 const url = notifBtn.dataset.marcar;
                 if (url) {
-                    fetch(url, { method: "POST" })
+                    fetch(url, {
+                        method: "POST",
+                        // El servidor exige el token CSRF tambien en las peticiones AJAX.
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                            "X-CSRF-Token": CSRF_TOKEN
+                        }
+                    })
                         .then(() => {
                             const badge = notifBtn.querySelector(".notif-badge");
                             if (badge) badge.remove();

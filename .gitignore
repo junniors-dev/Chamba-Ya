@@ -1,0 +1,21 @@
+# Configuración local con credenciales reales
+core/config/env.php
+
+# Fotos subidas por los usuarios (no son parte del código)
+assets/uploads/img_perfiles/*
+!assets/uploads/img_perfiles/default.png
+
+# Volcados de base de datos con datos reales
+*.sql
+!database/schema.sql
+!database/seed.sql
+!database/migracion_seguridad.sql
+
+# Sistema operativo / editores
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log

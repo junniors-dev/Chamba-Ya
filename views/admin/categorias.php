@@ -47,6 +47,7 @@
     <div class="admin-modal">
         <h3>Nueva categoría</h3>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=crearCategoria" enctype="multipart/form-data">
+                    <?= campoCsrf() ?>
             <label>Nombre</label>
             <input type="text" name="nombre" required placeholder="Ej: Plomería">
             <label>Imagen (opcional, JPG/PNG/WEBP)</label>
@@ -64,6 +65,7 @@
     <div class="admin-modal">
         <h3>Editar categoría</h3>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=editarCategoria" enctype="multipart/form-data">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idCategoria" value="">
             <label>Nombre</label>
             <input type="text" name="nombre" required>
@@ -83,6 +85,7 @@
         <h3>Eliminar categoría</h3>
         <p>¿Eliminar la categoría "<strong id="nombreEliminarCat"></strong>"?</p>
         <form method="POST" action="<?= BASE_URL ?>controllers/AdminController.php?action=eliminarCategoria">
+                    <?= campoCsrf() ?>
             <input type="hidden" name="idCategoria" value="">
             <div class="admin-modal-acciones">
                 <button type="button" class="btn-modal cancelar" data-cierra-modal>Cancelar</button>
