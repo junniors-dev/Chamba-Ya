@@ -165,3 +165,8 @@ desarrollo y mantenimiento corresponden a un único responsable.
 Son de autoría propia la auditoría de seguridad descrita arriba, el modo activo, el
 portafolio, el ciclo de trabajo con estado `Completado` y el sistema de reseñas
 verificables. El historial del repositorio documenta la etapa inicial.
+
+## Licencia
+
+[MIT](LICENSE). El copyright figura a nombre de Junni Díaz y los contribuidores de
+Chamba Ya: la etapa inicial fue trabajo de equipo y el historial de git lo acredita.
